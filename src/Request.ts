@@ -13,8 +13,13 @@ export class RequestWrapper {
 
   constructor(
     private req: uWS.HttpRequest,
+    private res: uWS.HttpResponse,
     private parameterNames: string[]
   ) {
+  }
+
+  get ip () {
+    return Buffer.from(this.res.getRemoteAddressAsText()).toString();
   }
 
   get headers (): http.IncomingHttpHeaders {
@@ -44,8 +49,18 @@ export class RequestWrapper {
     return this._query;
   }
 
+  get originalUrl () {
+    return this.url;
+  }
+
   get url () {
-    if (!this._url) this._url = this.req.getUrl();
+    if (!this._url) {
+      this._url = this.req.getUrl();
+
+      const query = this.req.getQuery();
+      if (query) { this._url += `?${query}`; }
+    }
+
     return this._url;
   }
 

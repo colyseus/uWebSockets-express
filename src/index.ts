@@ -32,7 +32,7 @@ export default function (app: uWS.TemplatedApp) {
       res.onAborted(onAbort.bind(this, path));
 
       handler(
-        new RequestWrapper(req, getUrlParameters(path)), //  as unknown as express.Request
+        new RequestWrapper(req, res, getUrlParameters(path)), //  as unknown as express.Request
         new ResponseWrapper(res)// as unknown as express.Response
       );
     });

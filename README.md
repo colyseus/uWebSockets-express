@@ -36,10 +36,10 @@ Express API compatibility layer for uWebSockets.js.
   - ❌ req.cookies
   - ❌ req.fresh
   - ❌ req.hostname
-  - ❌ req.ip
+  - ✅ req.ip
   - ❌ req.ips
-  - ❌ req.method
-  - ❌ req.originalUrl
+  - ✅ req.method
+  - ✅ req.originalUrl
   - ❌ req.params
   - ✅ req.path
   - ❌ req.protocol

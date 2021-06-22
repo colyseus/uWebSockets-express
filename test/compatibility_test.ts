@@ -20,30 +20,6 @@ describe("uWS Express API Compatibility", () => {
     server.close();
   });
 
-  // describe("request", () => {
-  //   it("params", async () => {
-  //     app.get("/route/:one/:two", (req, res) => {
-  //       res.end("response...");
-  //     });
-
-  //     const response = await http.get(`${URL}/route/one/two`);
-  //     console.log(response.data);
-
-  //     assert.ok("it's okay");
-  //   });
-
-  //   it("query", async () => {
-  //     app.get("/route/:one/:two", (req, res) => {
-  //       // res.json(req)
-  //     });
-
-  //     const response = await http.get(`${URL}/route/one/two`);
-  //     console.log(response.data);
-
-  //     assert.ok("it's okay");
-  //   });
-  // });
-
   describe("response", () => {
     it("respond to fallback route", async () => {
       const response = await http.get(`${URL}/not_found`, { validateStatus: null });
@@ -112,6 +88,68 @@ describe("uWS Express API Compatibility", () => {
 
       const response = await http.get(`${URL}/redirect`);
       assert.strictEqual("final", response.data);
+    });
+
+  });
+
+  describe("request", () => {
+    it("params", async () => {
+      app.get("/params/:one/:two", (req, res) => {
+        res.json({
+          one: req.params['one'],
+          two: req.params['two'],
+        });
+      });
+
+      assert.deepStrictEqual({
+        one: "one",
+        two: "two"
+      }, (await http.get(`${URL}/params/one/two`)).data);
+
+      assert.deepStrictEqual({
+        one: "another",
+        two: "1"
+      }, (await http.get(`${URL}/params/another/1`)).data);
+    });
+
+    it("query", async () => {
+      app.get("/query", (req, res) => {
+        res.json(req.query);
+      });
+
+      const response = await http.get(`${URL}/query?one=1&two=2&three=3&four=4`);
+      assert.deepStrictEqual({
+        one: "1",
+        two: "2",
+        three: "3",
+        four: "4"
+      }, response.data);
+    });
+
+    it("method / path / url", async () => {
+      app.get("/properties", (req, res) => {
+        res.json({
+          method: req.method,
+          path: req.path,
+          url: req.url,
+        });
+      });
+
+      const { data } = (await http.get(`${URL}/properties?something=true`));
+      assert.deepStrictEqual({
+        method: "get",
+        path: "/properties",
+        url: "/properties?something=true",
+      }, data);
+    });
+
+    it("ip", async () => {
+      app.get("/ip", (req, res) => {
+        res.json({ ip: req.ip });
+      });
+
+      const { data } = (await http.get(`${URL}/ip`));
+      assert.strictEqual(39, data.ip.length);
     });
 
   });

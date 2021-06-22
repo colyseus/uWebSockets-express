@@ -61,13 +61,11 @@ export default function (app: uWS.TemplatedApp) {
   let listeningSocket: any = undefined;
   function listen(port?: number, cb?: () => void) {
     // fallback route to mimic express behaviour.
-    app.any("/*", (res, req) => {
-      res.end(`Cannot ${req.getMethod()} ${req.getUrl()}`);
+    any("any", "/*", (req, res) => {
+      res
+        .status(404)
+        .end(`Cannot ${req.method.toUpperCase()} ${req.path}`);
     });
-
-    // any("any", "/*", (req, res) => {
-    //   res.end(`Cannot ${req.method} ${req.path}`);
-    // });
 
     app.listen(port, (listenSocket: any) => {
       listeningSocket = listenSocket;

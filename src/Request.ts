@@ -51,7 +51,7 @@ export class RequestWrapper {
 
   get path(): string {
     if (!this._path) {
-      const parsedURL = new URL(this.url);
+      const parsedURL = new URL(`http://server${this.url}`);
       this._path = parsedURL.pathname;
     }
     return this._path;

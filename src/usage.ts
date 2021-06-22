@@ -44,4 +44,10 @@ ex.get("/candy/:kind", (req, res) => {
   res.end("Hello!");
 });
 
+ex.get("/location", (req, res) => {
+  console.log("location...");
+  const resp = res.redirect("/candy/mahcandy")
+
+});
+
 ex.listen(8001, () => console.log("Express listening to port 8001"));

@@ -1,9 +1,8 @@
 import uWS from "uWebSockets.js";
 import assert from "assert";
-import express from "express";
-import httpie from "httpie";
 import expressify from "../src";
 import { StatusCodes } from "http-status-codes";
+import http from "axios";
 
 const PORT = 9999;
 const URL = `http://localhost:${PORT}`;
@@ -14,14 +13,11 @@ describe("uWS Express API Compatibility", () => {
 
   beforeEach(async () => {
     app = expressify(uWS.App());
-
-    server = app.listen(PORT, () =>
-      console.log(">> app.listen() ..."));
+    server = app.listen(PORT, () => {});
   });
 
   afterEach(() => {
     server.close();
-    console.log(">> server.close() ...");
   });
 
   // describe("request", () => {
@@ -30,7 +26,7 @@ describe("uWS Express API Compatibility", () => {
   //       res.end("response...");
   //     });
 
-  //     const response = await httpie.get(`${URL}/route/one/two`);
+  //     const response = await http.get(`${URL}/route/one/two`);
   //     console.log(response.data);
 
   //     assert.ok("it's okay");
@@ -41,7 +37,7 @@ describe("uWS Express API Compatibility", () => {
   //       // res.json(req)
   //     });
 
-  //     const response = await httpie.get(`${URL}/route/one/two`);
+  //     const response = await http.get(`${URL}/route/one/two`);
   //     console.log(response.data);
 
   //     assert.ok("it's okay");
@@ -50,9 +46,13 @@ describe("uWS Express API Compatibility", () => {
 
   describe("response", () => {
     it("respond to fallback route", async () => {
-      const response = await httpie.get(`${URL}/not_found`);
-      assert.strictEqual(StatusCodes.OK, response.statusCode);
+      const response = await http.get(`${URL}/not_found`, { validateStatus: null });
+      assert.strictEqual(StatusCodes.NOT_FOUND, response.status);
       assert.strictEqual("Cannot GET /not_found", response.data);
+
+      const response2 = await http.post(`${URL}/not_found2`, {}, { validateStatus: null });
+      assert.strictEqual(StatusCodes.NOT_FOUND, response2.status);
+      assert.strictEqual("Cannot POST /not_found2", response2.data);
     });
 
     it("status()", async () => {
@@ -60,8 +60,8 @@ describe("uWS Express API Compatibility", () => {
         res.status(StatusCodes.CREATED).end();
       });
 
-      const response = await httpie.get(`${URL}/status`);
-      assert.strictEqual(StatusCodes.CREATED, response.statusCode);
+      const response = await http.get(`${URL}/status`);
+      assert.strictEqual(StatusCodes.CREATED, response.status);
     });
 
     it("end()", async () => {
@@ -69,8 +69,49 @@ describe("uWS Express API Compatibility", () => {
         res.end("Hello world!");
       });
 
-      const response = await httpie.get(`${URL}/end`);
+      const response = await http.get(`${URL}/end`);
       assert.strictEqual("Hello world!", response.data);
+    });
+
+    it("hasHeader() / removeHeader() / set()", async () => {
+      app.get("/headers", (req, res) => {
+        assert.strictEqual(false, res.hasHeader("something"));
+
+        res.set("something", "yes!");
+        assert.strictEqual(true, res.hasHeader("something"));
+
+        res.removeHeader("something");
+        res.set("definitely", "yes!");
+
+        res.end();
+      });
+
+      const response = await http.get(`${URL}/headers`);
+      assert.strictEqual("yes!", response.headers['definitely']);
+      assert.strictEqual(undefined, response.headers['something']);
+    });
+
+    it("json()", async () => {
+      app.get("/json", (req, res) => {
+        res.json({ hello: "world" });
+      });
+
+      const response = await http.get(`${URL}/json`);
+      assert.strictEqual("application/json", response.headers['content-type']);
+      assert.deepStrictEqual({ hello: "world" }, response.data);
+    });
+
+    it("redirect()", async () => {
+      app.get("/redirected", (req, res) => {
+        res.end("final");
+      });
+
+      app.get("/redirect", (req, res) => {
+        res.redirect("/redirected");
+      });
+
+      const response = await http.get(`${URL}/redirect`);
+      assert.strictEqual("final", response.data);
     });
 
   });

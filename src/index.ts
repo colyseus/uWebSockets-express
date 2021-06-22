@@ -14,10 +14,9 @@ function onAbort(url) {
 }
 
 export default function (app: uWS.TemplatedApp) {
-
   const middlewares = [];
 
-  function use() {
+  function use(path: string, fn: Function | express.Router) {
   }
 
   // const expressApp = express();

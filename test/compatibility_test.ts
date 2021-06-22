@@ -1,4 +1,5 @@
 import uWS from "uWebSockets.js";
+import express from "express";
 import assert from "assert";
 import expressify from "../src";
 import { StatusCodes } from "http-status-codes";
@@ -153,5 +154,20 @@ describe("uWS Express API Compatibility", () => {
     });
 
   });
+
+  describe("express.Router compatibility", () => {
+    it("should re-use Router routes", async () => {
+      const routes = express.Router();
+      routes.get("/one", (req, res) => { res.json({ one: "one" }); });
+      routes.post("/two", (req, res) => { res.json({ two: "two" }); });
+      routes.delete("/three", (req, res) => { res.json({ three: "three" }); });
+      app.use("/routes", routes);
+
+      assert.deepStrictEqual({ one: "one" }, (await http.get(`${URL}/routes/one`)).data);
+      assert.deepStrictEqual({ two: "two" }, (await http.get(`${URL}/routes/two`)).data);
+      assert.deepStrictEqual({ three: "three" }, (await http.get(`${URL}/routes/three`)).data);
+    });
+
+  })
 
 });

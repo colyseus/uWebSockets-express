@@ -2,48 +2,49 @@
 
 Express API compatibility layer for uWebSockets.js.
 
-- ✅ Middlewares
+- Middleware support
 - Response API
-  - ❌ res.app
   - ✅ res.headersSent
+  - ✅ res.end()
+  - ✅ res.get()
+  - ✅ res.json()
+  - ✅ res.jsonp()
+  - ✅ res.location()
+  - ✅ res.redirect()
+  - ✅ res.send()
+  - ✅ res.sendStatus()
+  - ✅ res.set()
+  - ✅ res.status()
+  - ✅ res.type()
+  - ✅ res.vary()
+  - ❌ res.app
   - ❌ res.locals
   - ❌ res.append()
   - ❌ res.attachment()
   - ❌ res.cookie()
   - ❌ res.clearCookie()
   - ❌ res.download()
-  - ✅ res.end()
   - ❌ res.format()
-  - ✅ res.get()
-  - ✅ res.json()
-  - ✅ res.jsonp()
   - ❌ res.links()
-  - ✅ res.location()
-  - ✅ res.redirect()
   - ❌ res.render()
-  - ✅ res.send()
   - ❌ res.sendFile()
-  - ✅ res.sendStatus()
-  - ✅ res.set()
-  - ✅ res.status()
-  - ✅ res.type()
-  - ✅ res.vary()
-
 - Request API
+  - ✅ req.ip
+  - ✅ req.method
+  - ✅ req.originalUrl
+  - ✅ req.params
+  - ✅ req.path
+  - ✅ req.query
+  - ✅ req.get()
+  - ✅ req.param()
   - ❌ req.app
   - ❌ req.baseUrl
   - ❌ req.body
   - ❌ req.cookies
   - ❌ req.fresh
   - ❌ req.hostname
-  - ✅ req.ip
   - ❌ req.ips
-  - ✅ req.method
-  - ✅ req.originalUrl
-  - ❌ req.params
-  - ✅ req.path
   - ❌ req.protocol
-  - ✅ req.query
   - ❌ req.route
   - ❌ req.secure
   - ❌ req.signedCookies
@@ -54,11 +55,8 @@ Express API compatibility layer for uWebSockets.js.
   - ❌ req.acceptsCharsets()
   - ❌ req.acceptsEncodings()
   - ❌ req.acceptsLanguages()
-  - ✅ req.get()
   - ❌ req.is()
-  - ✅ req.param()
   - ❌ req.range()
-
 
 ## TODO: Test compatibility with
 
@@ -69,10 +67,10 @@ Express API compatibility layer for uWebSockets.js.
 
 ```typescript
 import uWS from "uWebSockets.js"
-import expressWrapper from "uwebsockets-express"
+import expressify from "uwebsockets-express"
 
 const app = uWS.App();
-const expressApp = expressWrapper(app);
+const expressApp = expressify(app);
 
 expressApp.get("/hello", (req, res) => {
   res.json({ hello: "world!" });

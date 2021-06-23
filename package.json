@@ -14,6 +14,7 @@
     "@types/mocha": "^8.2.2",
     "axios": "^0.21.1",
     "express": "^4.17.1",
+    "express-session": "^1.17.2",
     "mocha": "^9.0.1",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.4",

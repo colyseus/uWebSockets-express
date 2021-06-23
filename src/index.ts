@@ -1,5 +1,5 @@
 import uWS from "uWebSockets.js";
-import express from "express";
+import express, { NextFunction } from "express";
 
 import { RequestWrapper } from "./Request";
 import { ResponseWrapper } from "./Response";
@@ -13,18 +13,24 @@ function onAbort(url) {
   console.warn(url, "request aborted.");
 }
 
-export default function (app: uWS.TemplatedApp) {
-  const middlewares = [];
+type RequestHandler = (req: RequestWrapper, res: ResponseWrapper, next?: NextFunction) => void;
 
-  function use(path: string, middlewareOrRouter: Function | express.Router) {
-    if ((middlewareOrRouter as express.Router).stack?.length > 0) {
-      convertExpressRouter(path, middlewareOrRouter as express.Router);
+export default function (app: uWS.TemplatedApp) {
+  const middlewares: RequestHandler[] = [];
+
+  function use(handler: RequestHandler)
+  function use(path: string, handler: RequestHandler)
+  function use(path: string, router: express.Router)
+  function use(pathOrHandler: string | RequestHandler, handlerOrRouter?: Function | express.Router) {
+    if (typeof (pathOrHandler) === "function") {
+      middlewares.push(pathOrHandler as RequestHandler);
+
+    } else if ((handlerOrRouter as express.Router)?.stack?.length > 0) {
+      convertExpressRouter(pathOrHandler as string, handlerOrRouter as express.Router);
     }
   }
 
   function convertExpressRouter (basePath: string, router: express.Router) {
-    // console.log("convertExpressRouter!! basePath =>", basePath);
-
     router.stack.forEach(layer => {
       if (!layer.route && layer.name === "router") {
         // nested route!
@@ -39,14 +45,6 @@ export default function (app: uWS.TemplatedApp) {
         const path = layer.route.path;
         const method = layer.route.stack[0].method;
         const handle = layer.route.stack[0].handle;
-
-        // console.log("register:", {
-        //   fullPath: `${basePath}${path}`,
-        //   path,
-        //   method,
-        //   handle
-        // });
-
         any(method, `${basePath}${path}`, handle);
       }
     });
@@ -64,14 +62,25 @@ export default function (app: uWS.TemplatedApp) {
    */
   app['delete'] = app['del'];
 
-  function any(method: "del" | "put" | "get" | "post" | "head" | "any", path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    app[method](path, (res, req) => {
+  function any(method: "del" | "put" | "get" | "post" | "head" | "any", path: string, handler: RequestHandler) {
+    app[method](path, async (res, req) => {
       res.onAborted(onAbort.bind(this, path));
 
-      handler(
-        new RequestWrapper(req, res, getUrlParameters(path)), //  as unknown as express.Request
-        new ResponseWrapper(res)// as unknown as express.Response
-      );
+      const request = new RequestWrapper(req, res, getUrlParameters(path));
+      const response = new ResponseWrapper(res);
+
+      // run middlewares
+      for (let i = 0; i < middlewares.length; i++) {
+        let next: (err?: any) => void;
+        const promise = new Promise<void>((resolve, _) => {
+          next = () => resolve();
+        });
+        middlewares[i](request, response, next);
+        await promise;
+      }
+
+      // final request handler.
+      handler(request, response);
     });
   }
 

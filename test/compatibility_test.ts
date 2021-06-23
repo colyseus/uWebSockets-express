@@ -204,4 +204,45 @@ describe("uWS Express API Compatibility", () => {
     });
   });
 
+  describe("Middlewares", () => {
+    it("should run at every request", async () => {
+      app.use((req, res, next) => {
+        res.set("header1", "one");
+        next();
+      });
+
+      app.use((req, res, next) => {
+        res.set("header2", "two");
+        next();
+      });
+
+      app.get("/hey", (req, res) => res.end("done"));
+
+      const response = await http.get(`${URL}/hey`);
+      assert.strictEqual("done", response.data);
+      assert.strictEqual("one", response.headers['header1']);
+      assert.strictEqual("two", response.headers['header2']);
+    });
+
+
+    it("should support middlewares at specific segments", async () => {
+      app.use((req, res, next) => {
+        res.set("header1", "one");
+        next();
+      });
+
+      app.use((req, res, next) => {
+        res.set("header2", "two");
+        next();
+      });
+
+      app.get("/hey", (req, res) => res.end("done"));
+
+      const response = await http.get(`${URL}/hey`);
+      assert.strictEqual("done", response.data);
+      assert.strictEqual("one", response.headers['header1']);
+      assert.strictEqual("two", response.headers['header2']);
+    });
+  });
+
 });

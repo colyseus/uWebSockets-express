@@ -8,7 +8,7 @@ export class RequestWrapper {
   private _path: string;
   private _query: querystring.ParsedUrlQuery;
   private _method: string;
-  private _headers: http.IncomingHttpHeaders;
+  private _headers: http.IncomingHttpHeaders = {};
   private _params: {[name: string]: string};
 
   constructor(
@@ -24,7 +24,12 @@ export class RequestWrapper {
   }
 
   get headers (): http.IncomingHttpHeaders {
-    if (!this._headers) this.req.forEach((k, v) => this._headers[k] = v);
+    if (!this._headers) {
+      this.req.forEach((k, v) => {
+        console.log({ k, v });
+        this._headers[k] = v;
+      });
+    }
     return this._headers;
   }
 

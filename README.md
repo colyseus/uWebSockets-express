@@ -59,10 +59,9 @@ Express API compatibility layer for uWebSockets.js.
   - ❌ req.is()
   - ❌ req.range()
 
-## TODO: Test compatibility with
-
-- https://github.com/expressjs/serve-index
-- https://github.com/expressjs/serve-static
+## Compatible with:
+- ❌ [express/serve-index](https://github.com/expressjs/serve-index)
+- ❌ [express/serve-static](https://github.com/expressjs/serve-static) (`express.static()`)
 
 ## Usage
 

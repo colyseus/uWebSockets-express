@@ -22,6 +22,7 @@ export default function (app: uWS.TemplatedApp) {
   function use(handler: RequestHandler)
   function use(path: string, handler: RequestHandler)
   function use(path: string, router: express.Router)
+  function use(path: string, any: any)
   function use(pathOrHandler: string | RequestHandler, handlerOrRouter?: Function | express.Router) {
     if (typeof (pathOrHandler) === "function") {
       middlewares.push({ handler: pathOrHandler });
@@ -30,19 +31,10 @@ export default function (app: uWS.TemplatedApp) {
       convertExpressRouter(pathOrHandler as string, handlerOrRouter as express.Router);
 
     } else if (typeof(pathOrHandler) === "string" && typeof(handlerOrRouter) === "function") {
-
-      // TODO: test me!
-
-      // console.log("MIDDLEWARE??", handlerOrRouter.toString());
-      // console.log({
-      //   pathOrHandler,
-      //   handlerOrRouter,
-      // })
       middlewares.push({
         regexp: pathToRegexp(pathOrHandler, [], { end: false, strict: false }),
         handler: handlerOrRouter as RequestHandler
       });
-
     }
   }
 
@@ -99,9 +91,7 @@ export default function (app: uWS.TemplatedApp) {
       for (let i = 0; i < middlewares.length; i++) {
         let next: (err?: any) => void;
         const promise = new Promise<void>((resolve, _) => {
-          next = () => {
-            resolve();
-          };
+          next = () => { resolve(); };
         });
 
         const middleware = middlewares[i];

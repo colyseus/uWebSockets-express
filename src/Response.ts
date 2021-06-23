@@ -38,13 +38,11 @@ export class ResponseWrapper {
     return this._headers[name];
   }
 
-  hasHeader(name: string) {
-    return (this._headers[name] !== undefined);
-  }
+  hasHeader(name: string) { return (this._headers[name] !== undefined); }
 
-  removeHeader(name: string) {
-    delete this._headers[name];
-  }
+  getHeader(name: string) { this.get(name); }
+  setHeader(name: string, value: string) { this.set(name, value); }
+  removeHeader(name: string) { delete this._headers[name]; }
 
   status(code: number) {
     this._status = code;
@@ -73,6 +71,11 @@ export class ResponseWrapper {
   send(chunk: RecognizedString) {
     this.res.write(chunk);
     return this;
+  }
+
+  // alias to .send()
+  write(chunk: RecognizedString) {
+    return this.send(chunk);
   }
 
   type(type: string) {
@@ -130,4 +133,11 @@ export class ResponseWrapper {
     }
     this.headersSent = true;
   }
+
+  // // express-session [??]
+  // private _implicitHeader () {
+  //   const code = StatusCodes.OK;
+  //   const reason = ReasonPhrases[StatusCodes[code]];
+  //   this.res.writeStatus(`${code} ${reason}`);
+  // }
 }

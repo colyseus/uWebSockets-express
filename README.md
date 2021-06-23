@@ -69,10 +69,10 @@ Express API compatibility layer for uWebSockets.js.
 import uWS from "uWebSockets.js"
 import expressify from "uwebsockets-express"
 
-const app = uWS.App();
-const expressApp = expressify(app);
+const uwsApp = uWS.App();
+const app = expressify(uwsApp);
 
-expressApp.get("/hello", (req, res) => {
+app.get("/hello", (req, res) => {
   res.json({ hello: "world!" });
 });
 ```

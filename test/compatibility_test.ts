@@ -158,14 +158,14 @@ describe("uWS Express API Compatibility", () => {
   describe("express.Router compatibility", () => {
     it("should re-use Router routes", async () => {
       const routes = express.Router();
-      routes.get("/one", (req, res) => { res.json({ one: "one" }); });
-      routes.post("/two", (req, res) => { res.json({ two: "two" }); });
-      routes.delete("/three", (req, res) => { res.json({ three: "three" }); });
+      routes.get("/one/:param1", (req, res) => res.json({ one: req.params.param1 }));
+      routes.post("/two", (req, res) => res.json({ two: "two" }));
+      routes.delete("/three", (req, res) => res.json({ three: "three" }));
       app.use("/routes", routes);
 
-      assert.deepStrictEqual({ one: "one" }, (await http.get(`${URL}/routes/one`)).data);
-      assert.deepStrictEqual({ two: "two" }, (await http.get(`${URL}/routes/two`)).data);
-      assert.deepStrictEqual({ three: "three" }, (await http.get(`${URL}/routes/three`)).data);
+      assert.deepStrictEqual({ one: "param1" }, (await http.get(`${URL}/routes/one/param1`)).data);
+      assert.deepStrictEqual({ two: "two" }, (await http.post(`${URL}/routes/two`)).data);
+      assert.deepStrictEqual({ three: "three" }, (await http.delete(`${URL}/routes/three`)).data);
     });
 
   })

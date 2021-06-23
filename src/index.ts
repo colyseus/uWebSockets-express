@@ -5,7 +5,7 @@ import { RequestWrapper } from "./Request";
 import { ResponseWrapper } from "./Response";
 
 function getUrlParameters (url: string) {
-  return (url.match(/:([a-zA-Z\_]+)/gi) || []).map((param) => param.substr(1));
+  return (url.match(/:([a-zA-Z0-9\_]+)/gi) || []).map((param) => param.substr(1));
 }
 
 function onAbort(url) {
@@ -16,7 +16,19 @@ function onAbort(url) {
 export default function (app: uWS.TemplatedApp) {
   const middlewares = [];
 
-  function use(path: string, fn: Function | express.Router) {
+  function use(path: string, middlewareOrRouter: Function | express.Router) {
+    if ((middlewareOrRouter as express.Router).stack?.length > 0) {
+      convertExpressRouter(path, middlewareOrRouter as express.Router);
+    }
+  }
+
+  function convertExpressRouter (basePath: string, router: express.Router) {
+    router.stack.forEach(layer => {
+      const path = layer.route.path;
+      const method = layer.route.stack[0].method;
+      const handle = layer.route.stack[0].handle;
+      any(method, `${basePath}${path}`, handle);
+    });
   }
 
   // const expressApp = express();
@@ -25,6 +37,11 @@ export default function (app: uWS.TemplatedApp) {
   //   res.setTimeout
   // });
   // expressApp.listen()
+
+  /**
+   * Alias app.delete() = app.del()
+   */
+  app['delete'] = app['del'];
 
   function any(method: "del" | "put" | "get" | "post" | "head" | "any", path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
     app[method](path, (res, req) => {

@@ -12,6 +12,7 @@
     "@types/express": "^4.17.12",
     "@types/mime": "^2.0.3",
     "@types/mocha": "^8.2.2",
+    "@types/path-to-regexp": "^1.7.0",
     "axios": "^0.21.1",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "http-status-codes": "^2.1.4",
-    "mime": "^2.5.2"
+    "mime": "^2.5.2",
+    "path-to-regexp": "^0.1.7"
   }
 }

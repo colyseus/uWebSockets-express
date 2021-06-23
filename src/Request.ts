@@ -14,6 +14,7 @@ export class RequestWrapper {
   constructor(
     private req: uWS.HttpRequest,
     private res: uWS.HttpResponse,
+    private _originalUrl: string,
     private parameterNames: string[]
   ) {
   }
@@ -55,7 +56,7 @@ export class RequestWrapper {
 
   get url () {
     if (!this._url) {
-      this._url = this.req.getUrl();
+      this._url = this._originalUrl;
 
       const query = this.req.getQuery();
       if (query) { this._url += `?${query}`; }

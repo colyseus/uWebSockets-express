@@ -205,6 +205,22 @@ describe("uWS Express API Compatibility", () => {
   });
 
   describe("Middlewares", () => {
+    it("should support router-level middleware", async () => {
+      const root = express.Router();
+
+      root.use(function (req, res, next) {
+        res.set("catch-all", "all");
+        next();
+      });
+      root.get("/hello", (req, res) => res.end("hello"));
+
+      app.use("/root", root);
+
+      const response = await http.get(`${URL}/root/hello`);
+      assert.strictEqual("hello", response.data);
+      assert.strictEqual("all", response.headers['catch-all']);
+    });
+
     it("should run at every request", async () => {
       app.use((req, res, next) => {
         res.set("header1", "one");
@@ -224,24 +240,29 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual("two", response.headers['header2']);
     });
 
-
     it("should support middlewares at specific segments", async () => {
       app.use((req, res, next) => {
-        res.set("header1", "one");
+        res.set("catch-all", "all");
         next();
       });
 
-      app.use((req, res, next) => {
-        res.set("header2", "two");
+      app.use("/users/:id", (req, res, next) => {
+        res.set("token", req.params['id']);
         next();
       });
 
-      app.get("/hey", (req, res) => res.end("done"));
+      app.use("/teams", (req, res, next) => {
+        res.set("team", "team");
+        next();
+      });
 
-      const response = await http.get(`${URL}/hey`);
-      assert.strictEqual("done", response.data);
-      assert.strictEqual("one", response.headers['header1']);
-      assert.strictEqual("two", response.headers['header2']);
+      app.get("/users/:id", (req, res) => res.json({ user: req.params.id }));
+
+      const response = await http.get(`${URL}/users/10`);
+      assert.deepStrictEqual({ user: "10" }, response.data);
+      assert.strictEqual("all", response.headers['catch-all']);
+      assert.strictEqual("10", response.headers['token']);
+      assert.strictEqual(undefined, response.headers['team']);
     });
   });
 

@@ -94,6 +94,18 @@ describe("uWS Express API Compatibility", () => {
   });
 
   describe("request", () => {
+    it("app.head()", async () => {
+      app.head("/params/:one/:two", (req, res) => {
+        res.set("field1", "1");
+        res.set("field2", "2");
+        res.end();
+      });
+
+      const headers = (await http.head(`${URL}/params/one/two`)).headers;
+      assert.strictEqual("1", headers.field1);
+      assert.strictEqual("2", headers.field2);
+    });
+
     it("params", async () => {
       app.get("/params/:one/:two", (req, res) => {
         res.json({
@@ -152,22 +164,44 @@ describe("uWS Express API Compatibility", () => {
       const { data } = (await http.get(`${URL}/ip`));
       assert.strictEqual(39, data.ip.length);
     });
-
   });
 
   describe("express.Router compatibility", () => {
-    it("should re-use Router routes", async () => {
+    it("should rebuild routes with proper methods", async () => {
       const routes = express.Router();
       routes.get("/one/:param1", (req, res) => res.json({ one: req.params.param1 }));
       routes.post("/two", (req, res) => res.json({ two: "two" }));
       routes.delete("/three", (req, res) => res.json({ three: "three" }));
+      routes.put("/four", (req, res) => res.json({ four: "four" }));
       app.use("/routes", routes);
 
       assert.deepStrictEqual({ one: "param1" }, (await http.get(`${URL}/routes/one/param1`)).data);
       assert.deepStrictEqual({ two: "two" }, (await http.post(`${URL}/routes/two`)).data);
       assert.deepStrictEqual({ three: "three" }, (await http.delete(`${URL}/routes/three`)).data);
+      assert.deepStrictEqual({ four: "four" }, (await http.put(`${URL}/routes/four`)).data);
     });
 
-  })
+    it("should support nested routes", async () => {
+      const root = express.Router();
+
+      const branch1 = express.Router();
+      branch1.get("/one", (req, res) => res.json({ one: 1 }));
+
+      const branch2 = express.Router();
+      branch2.get("/two", (req, res) => res.json({ two: 2 }));
+
+      const deep = express.Router();
+      deep.get("/three", (req, res) => res.json({ deep: true }));
+      branch2.use("/deep", deep);
+
+      root.use("/branch1", branch1);
+      root.use("/branch2", branch2);
+
+      app.use("/root", root);
+      assert.deepStrictEqual({ one: 1 }, (await http.get(`${URL}/root/branch1/one`)).data);
+      assert.deepStrictEqual({ two: 2 }, (await http.get(`${URL}/root/branch2/two`)).data);
+      assert.deepStrictEqual({ deep: true }, (await http.get(`${URL}/root/branch2/deep/three`)).data);
+    });
+  });
 
 });

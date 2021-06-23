@@ -2,7 +2,8 @@
 
 Express API compatibility layer for uWebSockets.js.
 
-- Middleware support
+- ✅ Middleware support
+- ✅ Supports existing Express Router instances
 - Response API
   - ✅ res.headersSent
   - ✅ res.end()

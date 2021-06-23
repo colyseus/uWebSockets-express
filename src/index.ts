@@ -23,11 +23,32 @@ export default function (app: uWS.TemplatedApp) {
   }
 
   function convertExpressRouter (basePath: string, router: express.Router) {
+    // console.log("convertExpressRouter!! basePath =>", basePath);
+
     router.stack.forEach(layer => {
-      const path = layer.route.path;
-      const method = layer.route.stack[0].method;
-      const handle = layer.route.stack[0].handle;
-      any(method, `${basePath}${path}`, handle);
+      if (!layer.route && layer.name === "router") {
+        // nested route!
+        let childPath = basePath;
+
+        const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
+        if (matches && matches[1]) { childPath += `/${matches[1]}`; }
+
+        convertExpressRouter(childPath, layer.handle);
+
+      } else {
+        const path = layer.route.path;
+        const method = layer.route.stack[0].method;
+        const handle = layer.route.stack[0].handle;
+
+        // console.log("register:", {
+        //   fullPath: `${basePath}${path}`,
+        //   path,
+        //   method,
+        //   handle
+        // });
+
+        any(method, `${basePath}${path}`, handle);
+      }
     });
   }
 

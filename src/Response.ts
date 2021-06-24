@@ -24,15 +24,8 @@ export class ResponseWrapper extends EventEmitter {
     let body = chunk;
     if (encoding) { body = Buffer.from(chunk, encoding).toString(); }
 
-    // write status
-    if (this.statusCode) {
-      const code = this.statusCode;
-      const reason = ReasonPhrases[StatusCodes[code]];
-      this.res.writeStatus(`${code} ${reason}`);
-    }
-
-    // write headers
-    this._writeHeaders();
+    // write status + headers
+    this.writeHead(this.statusCode || this.statusCode, this._headers);
 
     // dequeue writes
     this._writes.forEach((chunk) => this.res.write(chunk));
@@ -137,11 +130,6 @@ export class ResponseWrapper extends EventEmitter {
 
   set(name: string | object, value?: string) {
     if (typeof(name) === "string") {
-      // // skip content-length
-      // if (name.toLowerCase() === "content-length") {
-      //   return;
-      // }
-
       this._headers[name] = value;
 
     } else {
@@ -157,10 +145,21 @@ export class ResponseWrapper extends EventEmitter {
     return this.set(name, value);
   }
 
-  private _writeHeaders() {
-    for (const name in this._headers) {
-      this.res.writeHeader(name, this._headers[name]?.toString());
+  writeHead(code: number, headers: { [name: string]: string } = this._headers) {
+    if (this.headersSent) {
+      console.warn("writeHead: headers were already sent.")
+      return;
     }
+
+    // write status
+    const reason = ReasonPhrases[StatusCodes[code]];
+    this.res.writeStatus(`${code} ${reason}`);
+
+    // write headers
+    for (const name in headers) {
+      this.res.writeHeader(name, headers[name]?.toString());
+    }
+
     this.headersSent = true;
   }
 

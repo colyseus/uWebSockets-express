@@ -80,7 +80,7 @@ export default function (app: uWS.TemplatedApp) {
    */
   app['delete'] = app['del'];
 
-  function any(method: "del" | "put" | "get" | "post" | "head" | "any", path: string, handler: RequestHandler) {
+  function any(method: "del" | "put" | "get" | "post" | "patch" | "head" | "any", path: string, handler: RequestHandler) {
     app[method](path, async (res, req) => {
       res.onAborted(onAbort.bind(this, path));
 
@@ -130,6 +130,10 @@ export default function (app: uWS.TemplatedApp) {
     return any("post", path, handler);
   }
 
+  function patch(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
+    return any("patch", path, handler);
+  }
+
   function put(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
     return any("put", path, handler);
   }
@@ -170,6 +174,7 @@ export default function (app: uWS.TemplatedApp) {
     use,
     get,
     post,
+    patch,
     put,
     head,
     delete: del,

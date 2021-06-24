@@ -89,14 +89,10 @@ export default function (app: uWS.TemplatedApp) {
       const response = new ResponseWrapper(res);
 
       // run middlewares
-      console.log("MIDDLEWARES??", middlewares.length);
       for (let i = 0; i < middlewares.length; i++) {
         let next: (err?: any) => void;
         const promise = new Promise<void>((resolve, _) => {
-          next = () => {
-            console.log("RESOLVE PROMISE");
-            resolve();
-          };
+          next = () => { resolve(); };
         });
 
         const middleware = middlewares[i];
@@ -113,7 +109,6 @@ export default function (app: uWS.TemplatedApp) {
           middleware.handler(request, response, next);
         }
 
-        console.log("AWAITING PROMISE...", promise);
         await promise;
       }
 

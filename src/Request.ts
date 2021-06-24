@@ -2,6 +2,7 @@ import uWS from "uWebSockets.js";
 import http from "http";
 import querystring from "querystring";
 import { URL } from "url";
+import { Socket } from "./Socket";
 
 export class RequestWrapper {
   private _url: string;
@@ -10,6 +11,8 @@ export class RequestWrapper {
   private _method: string;
   private _headers: http.IncomingHttpHeaders = {};
   private _params: {[name: string]: string};
+
+  public socket = new Socket(false, true);
 
   constructor(
     private req: uWS.HttpRequest,
@@ -46,7 +49,7 @@ export class RequestWrapper {
   }
 
   get method(): string {
-    if (!this._method) this._method = this.req.getMethod();
+    if (!this._method) this._method = this.req.getMethod().toUpperCase();
     return this._method;
   }
 

@@ -150,7 +150,7 @@ describe("uWS Express API Compatibility", () => {
 
       const { data } = (await http.get(`${URL}/properties?something=true`));
       assert.deepStrictEqual({
-        method: "get",
+        method: "GET",
         path: "/properties",
         url: "/properties?something=true",
       }, data);

@@ -8,6 +8,4 @@ const PORT = 8080;
 const app = expressify(uWS.App());
 app.use('/', express.static(path.join(__dirname, "static")));
 
-console.log(express.static(path.join(__dirname, "static")).toString());
-
 app.listen(PORT, () => console.log("Listening on", PORT));

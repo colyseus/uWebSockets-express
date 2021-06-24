@@ -61,8 +61,8 @@ Express API compatibility layer for uWebSockets.js.
 
 ## Middleware support
 - ❌ [express/session](https://github.com/expressjs/session)
-- ❌ [express/serve-index](https://github.com/expressjs/serve-index)
-- ❌ [express/serve-static](https://github.com/expressjs/serve-static) (`express.static()`)
+- ✅ [express/serve-index](https://github.com/expressjs/serve-index)
+- ✅ [express/serve-static](https://github.com/expressjs/serve-static) (`express.static()`)
 
 ## Usage
 
@@ -77,6 +77,12 @@ app.get("/hello", (req, res) => {
   res.json({ hello: "world!" });
 });
 ```
+
+## Disclaimer
+
+Having an express compatibility layer on top of uWS is going to bring its performance slightly down. This library does not have performance as its only objective.
+
+If you find potential improvements to make it more performance, feel free to send me a pull-request!
 
 ## License
 

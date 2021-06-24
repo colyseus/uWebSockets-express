@@ -139,6 +139,20 @@ describe("uWS Express API Compatibility", () => {
       }, response.data);
     });
 
+    it("headers", async() => {
+      app.get("/headers", (req, res) => {
+        res.json(req.headers);
+      });
+
+      const response = await http.get(`${URL}/headers`, {headers: {
+        one: "1",
+        cookie: "mycookie"
+      }});
+
+      assert.strictEqual("1", response.data.one);
+      assert.strictEqual("mycookie", response.data.cookie);
+    });
+
     it("method / path / url", async () => {
       app.get("/properties", (req, res) => {
         res.json({

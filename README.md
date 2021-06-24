@@ -82,7 +82,7 @@ app.get("/hello", (req, res) => {
 
 Having an express compatibility layer on top of uWS is going to bring its performance slightly down. This library does not have performance as its only objective.
 
-If you find potential improvements to make it more performance, feel free to send me a pull-request!
+If you find potential improvements to make it more performant, feel free to send me a pull-request!
 
 ## License
 

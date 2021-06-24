@@ -23,6 +23,7 @@ export default function (app: uWS.TemplatedApp) {
   function use(path: string, handler: RequestHandler)
   function use(path: string, router: express.Router)
   function use(path: string, any: any)
+  function use(any: any)
   function use(pathOrHandler: string | RequestHandler, handlerOrRouter?: Function | express.Router) {
     if (typeof (pathOrHandler) === "function") {
       middlewares.push({ handler: pathOrHandler });

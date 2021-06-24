@@ -16,27 +16,6 @@ export class ResponseWrapper extends EventEmitter {
 
   constructor(private res: uWS.HttpResponse) {
     super();
-
-    // this.on('pipe', (stream: stream.Readable) => {
-    //   console.log("res.pipe() ...");
-
-    //   stream.on('data', (chunk: Buffer) => {
-    //     // this.send(chunk.toString());
-    //     console.log("WRITE", chunk.toString());
-    //   });
-
-    //   stream.on('end', () => {
-    //     console.log('stream.on END');
-    //     // this.end();
-    //     // this.emit('unpipe');
-    //     // this.emit('close');
-    //   });
-
-    //   stream.on('error', (err) => {
-    //     console.log('stream.on ERROR');
-    //     // this.emit('error', err);
-    //   });
-    // });
   }
 
   end(chunk?: string, encoding?: BufferEncoding) {
@@ -63,10 +42,8 @@ export class ResponseWrapper extends EventEmitter {
 
     this.socket.writable = false;
 
-    console.log("Response .end!!!");
     this.finished = true;
     this.emit('finish');
-    // this.emit('prefinish');
 
     return this;
   }
@@ -160,11 +137,10 @@ export class ResponseWrapper extends EventEmitter {
 
   set(name: string | object, value?: string) {
     if (typeof(name) === "string") {
-      // skip content-length
-      if (name.toLowerCase() === "content-length") {
-        console.log("HEADER", name, value);
-        return;
-      }
+      // // skip content-length
+      // if (name.toLowerCase() === "content-length") {
+      //   return;
+      // }
 
       this._headers[name] = value;
 

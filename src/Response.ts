@@ -116,6 +116,8 @@ export class ResponseWrapper extends EventEmitter {
     return this;
   }
 
+  redirect(code: number)
+  redirect(code: number, path: string)
   redirect(codeOrPath: number | string, path?: string) {
     if (arguments.length === 1) {
       path = codeOrPath as string;

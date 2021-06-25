@@ -144,14 +144,15 @@ export default function (app: uWS.TemplatedApp) {
     return any("head", path, handler);
   }
 
+  function bind404fallback() {
+    // fallback route to mimic express behaviour.
+    any("any", "/*", (req, res) =>
+      res.status(404).end(`Cannot ${req.method} ${req.path}`));
+  }
+
   let listeningSocket: any = undefined;
   function listen(port?: number, cb?: () => void) {
-    // fallback route to mimic express behaviour.
-    any("any", "/*", (req, res) => {
-      res
-        .status(404)
-        .end(`Cannot ${req.method} ${req.path}`);
-    });
+    bind404fallback();
 
     app.listen(port, (listenSocket: any) => {
       listeningSocket = listenSocket;
@@ -177,5 +178,6 @@ export default function (app: uWS.TemplatedApp) {
     put,
     head,
     delete: del,
+    bind404fallback,
   };
 }

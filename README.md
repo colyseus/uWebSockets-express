@@ -14,6 +14,8 @@ const app = expressify(uwsApp);
 app.get("/hello", (req, res) => {
   res.json({ hello: "world!" });
 });
+
+app.listen(8000);
 ```
 
 ## Compatibility coverage

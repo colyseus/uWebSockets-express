@@ -60,7 +60,7 @@ Express API compatibility layer for uWebSockets.js.
   - ❌ req.range()
 
 ## Middleware support
-- ❌ [express/session](https://github.com/expressjs/session)
+- ✅ [express/session](https://github.com/expressjs/session)
 - ✅ [express/serve-index](https://github.com/expressjs/serve-index)
 - ✅ [express/serve-static](https://github.com/expressjs/serve-static) (`express.static()`)
 

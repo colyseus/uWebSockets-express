@@ -6,10 +6,6 @@ import session from "express-session";
 
 const PORT = 8080;
 
-// external express router
-const users = express.Router();
-users.get("/", (req, res) => res.json({ username: "Jake Badlands" }));
-
 const app = expressify(uWS.App());
 
 // app.use(cookieParser());
@@ -19,15 +15,12 @@ app.use(session({
   secret: "shhh",
   resave: true,
   saveUninitialized: false,
+  cookie: { path: '/', httpOnly: true, secure: false, maxAge: 1000 * 60 * 24 },
 }));
-
-app.use("/users", users);
 
 // Access the session as req.session
 app.get('/', (req, res) => {
   const session = (req as any).session;
-  console.log("SESSION?? ", session);
-  console.log("views??", session.views);
 
   if (session.views) {
     session.views++

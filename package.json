@@ -2,7 +2,7 @@
   "name": "uwebsockets-express",
   "version": "1.0.0",
   "description": "Express API compatibility layer for uWebSockets.js",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "mocha test/*.ts --require ts-node/register"
   },

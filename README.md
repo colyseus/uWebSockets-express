@@ -2,6 +2,22 @@
 
 Express API compatibility layer for uWebSockets.js.
 
+## Usage
+
+```typescript
+import uWS from "uWebSockets.js"
+import expressify from "uwebsockets-express"
+
+const uwsApp = uWS.App();
+const app = expressify(uwsApp);
+
+app.get("/hello", (req, res) => {
+  res.json({ hello: "world!" });
+});
+```
+
+## Compatibility coverage
+
 - ✅ Middleware support
 - ✅ Supports existing Express Router instances
 - Response API
@@ -64,19 +80,6 @@ Express API compatibility layer for uWebSockets.js.
 - ✅ [express/serve-index](https://github.com/expressjs/serve-index)
 - ✅ [express/serve-static](https://github.com/expressjs/serve-static) (`express.static()`)
 
-## Usage
-
-```typescript
-import uWS from "uWebSockets.js"
-import expressify from "uwebsockets-express"
-
-const uwsApp = uWS.App();
-const app = expressify(uwsApp);
-
-app.get("/hello", (req, res) => {
-  res.json({ hello: "world!" });
-});
-```
 
 ## Disclaimer
 

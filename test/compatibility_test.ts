@@ -304,16 +304,15 @@ describe("uWS Express API Compatibility", () => {
       assert.deepStrictEqual('{"hello":"world"}', response.data);
     })
 
-    it("should read body as formdata", async () => {
+    it("should support urlencoded()", async () => {
+      app.use(express.urlencoded());
       app.post("/post_urlencoded", (req, res) => {
-        console.log("BODY =>", req.body);
         res.json(req.body);
       });
 
       const response = await http.post(`${URL}/post_urlencoded`, "hello=world&foo=bar", {
         headers: {
-          "content-type": 'application/x-www-form-​urlencoded',
-          "accept": "application/json",
+          "Content-Type": 'application/x-www-form-urlencoded',
         }
       });
 

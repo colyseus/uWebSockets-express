@@ -283,7 +283,10 @@ describe("uWS Express API Compatibility", () => {
 
     it("should support cors()", async () => {
       app.use(cors());
-      app.get("/cors", (req, res) => res.json(req.body));
+
+      app.get("/cors", (req, res) => {
+        res.json(req.body);
+      });
 
       const response = await http.options(`${URL}/cors`);
       assert.strictEqual('*', response.headers['access-control-allow-origin']);

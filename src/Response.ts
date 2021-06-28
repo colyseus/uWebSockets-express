@@ -132,11 +132,17 @@ export class ResponseWrapper extends EventEmitter {
 
   set(name: string | object, value?: string) {
     if (typeof(name) === "string") {
-      this._headers[name] = value;
+      name = name.toLowerCase();
+      if (name !== 'content-length') {
+        this._headers[name] = value;
+      }
 
     } else {
-      for (const _name in name) {
-        this._headers[_name] = name[_name];
+      for (let _name in name) {
+        _name = _name.toLowerCase();
+        if (_name !== 'content-length') {
+          this._headers[_name] = name[_name];
+        }
       }
     }
     return this;

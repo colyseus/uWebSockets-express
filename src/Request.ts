@@ -1,16 +1,20 @@
 import uWS from "uWebSockets.js";
 import http from "http";
 import querystring from "querystring";
+import EventEmitter from "events";
 import { URL } from "url";
 import { Socket } from "./Socket";
 
-export class RequestWrapper {
+export class RequestWrapper extends EventEmitter {
   private _url: string;
   private _path: string;
+  private _rawquery: string;
   private _query: querystring.ParsedUrlQuery;
   private _method: string;
   private _headers: http.IncomingHttpHeaders = {};
   private _params: {[name: string]: string};
+  private _rawbody: any;
+  private _bodyData: {[name: string]: string};
 
   public socket = new Socket(false, true);
 
@@ -20,14 +24,25 @@ export class RequestWrapper {
     private _originalUrl: string,
     private parameterNames: string[],
   ) {
+    super();
+
     this._headers = {};
     this.req.forEach((k, v) => { this._headers[k] = v; });
 
     this._method = this.req.getMethod().toUpperCase();
+    this._rawquery = this.req.getQuery();
   }
 
   get ip () {
     return Buffer.from(this.res.getRemoteAddressAsText()).toString();
+  }
+
+  set body (_body: any) {
+    this._rawbody = _body;
+  }
+
+  get body () {
+    return this._rawbody;
   }
 
   get headers (): http.IncomingHttpHeaders {
@@ -49,7 +64,7 @@ export class RequestWrapper {
   get method(): string { return this._method; }
 
   get query (): querystring.ParsedUrlQuery {
-    if(!this._query) this._query = querystring.parse(this.req.getQuery());
+    if(!this._query) this._query = querystring.parse(this._rawquery);
     return this._query;
   }
 
@@ -60,8 +75,7 @@ export class RequestWrapper {
   get url () {
     if (!this._url) {
       this._url = this._originalUrl;
-
-      const query = this.req.getQuery();
+      const query = this._rawquery;
       if (query) { this._url += `?${query}`; }
     }
 
@@ -78,5 +92,43 @@ export class RequestWrapper {
 
   header(name: string) {
     return this.req.getHeader(name);
+  }
+
+  on(event: string | symbol, listener: (...args: any[]) => void) {
+    if (event === 'data' && this._rawbody) {
+      /**
+       * req.body is synchronously before any middleware runs.
+       * here we're mimicking to trigger 'data' + 'end' + 'close' right at the moment the event is registered.
+       */
+      setImmediate(() => {
+        listener(this._rawbody);
+        this.emit('end');
+        this.emit('close');
+      });
+    } else {
+      super.on(event, listener);
+    }
+    return this;
+  }
+
+  protected readBody () {
+    return new Promise<boolean>((resolve, reject) => {
+      let body: Buffer;
+
+      this.res.onData((arrayBuffer, isLast) => {
+        // this.emit('data', arrayBuffer);
+
+        const chunk = Buffer.from(arrayBuffer);
+        body = body ? Buffer.concat([body, chunk]) : chunk;
+
+        if (isLast) {
+          this._rawbody = body.toString();
+          resolve(this._rawbody !== "");
+
+          // this.emit('end');
+          // this.emit('close');
+        }
+      });
+    })
   }
 }

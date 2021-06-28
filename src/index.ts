@@ -89,6 +89,11 @@ export default function (app: uWS.TemplatedApp) {
       const request = new RequestWrapper(req, res, url, getUrlParameters(path));
       const response = new ResponseWrapper(res);
 
+      // read body data!
+      if (request.headers['content-length']) {
+        await request['readBody']();
+      }
+
       // run middlewares
       for (let i = 0; i < middlewares.length; i++) {
         let next: (err?: any) => void;
@@ -146,8 +151,9 @@ export default function (app: uWS.TemplatedApp) {
 
   function bind404fallback() {
     // fallback route to mimic express behaviour.
-    any("any", "/*", (req, res) =>
-      res.status(404).end(`Cannot ${req.method} ${req.path}`));
+    any("any", "/*", (req, res) => {
+      res.status(404).end(`Cannot ${req.method} ${req.path}`);
+    });
   }
 
   let listeningSocket: any = undefined;

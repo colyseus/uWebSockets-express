@@ -1,6 +1,8 @@
 import uWS from "uWebSockets.js";
 import express from "express";
 import assert from "assert";
+import cors from "cors";
+import bodyParser from "body-parser";
 import expressify from "../src";
 import { StatusCodes } from "http-status-codes";
 import http from "axios";
@@ -278,6 +280,48 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual("10", response.headers['token']);
       assert.strictEqual(undefined, response.headers['team']);
     });
+
+    it("should support cors()", async () => {
+      app.use(cors());
+      app.get("/cors", (req, res) => res.json(req.body));
+
+      const response = await http.options(`${URL}/cors`);
+      assert.strictEqual('*', response.headers['access-control-allow-origin']);
+    })
+
+    it("should support express.json()", async () => {
+      app.use(express.json());
+      app.post("/json", (req, res) => res.json(req.body));
+
+      const response = await http.post(`${URL}/json`, { hello: "world" });
+      assert.deepStrictEqual({ hello: "world" }, response.data);
+    })
+
+    it("should read body as plain text", async () => {
+      app.post("/json", (req, res) => res.json(req.body));
+
+      const response = await http.post(`${URL}/json`, { hello: "world" });
+      assert.deepStrictEqual('{"hello":"world"}', response.data);
+    })
+
+    it("should read body as formdata", async () => {
+      app.post("/post_urlencoded", (req, res) => {
+        console.log("BODY =>", req.body);
+        res.json(req.body);
+      });
+
+      const response = await http.post(`${URL}/post_urlencoded`, "hello=world&foo=bar", {
+        headers: {
+          "content-type": 'application/x-www-form-​urlencoded',
+          "accept": "application/json",
+        }
+      });
+
+      assert.deepStrictEqual({
+        hello: "world",
+        foo: "bar",
+      }, response.data);
+    })
   });
 
 });

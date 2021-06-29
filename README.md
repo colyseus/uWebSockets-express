@@ -11,6 +11,12 @@ import expressify from "uwebsockets-express"
 const uwsApp = uWS.App();
 const app = expressify(uwsApp);
 
+// use existing middleware implementations!
+app.use('/', serveIndex(path.join(__dirname, ".."), { icons: true, hidden: true }))
+app.use('/', express.static(path.join(__dirname, "..")));
+app.use(express.json());
+
+// register routes
 app.get("/hello", (req, res) => {
   res.json({ hello: "world!" });
 });

@@ -54,6 +54,7 @@ app.listen(8000);
   - ❌ res.render()
   - ❌ res.sendFile()
 - Request API
+  - ✅ req.body
   - ✅ req.ip
   - ✅ req.method
   - ✅ req.originalUrl
@@ -64,7 +65,6 @@ app.listen(8000);
   - ✅ req.param()
   - ❌ req.app
   - ❌ req.baseUrl
-  - ❌ req.body
   - ❌ req.cookies
   - ❌ req.fresh
   - ❌ req.hostname

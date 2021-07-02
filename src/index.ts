@@ -62,9 +62,11 @@ export default function (app: uWS.TemplatedApp) {
 
       } else {
         const path = layer.route.path;
-        const method = layer.route.stack[0].method;
-        const handle = layer.route.stack[0].handle;
-        any(method, `${basePath}${path}`, handle);
+        const stack = layer.route.stack;
+        const method = stack[0].method;
+        // const handle = stack[0].handle;
+
+        any(method, `${basePath}${path}`, ...stack.map((s) => s.handle));
       }
     });
   }

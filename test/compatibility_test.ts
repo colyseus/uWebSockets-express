@@ -218,6 +218,22 @@ describe("uWS Express API Compatibility", () => {
       assert.deepStrictEqual({ two: 2 }, (await http.get(`${URL}/root/branch2/two`)).data);
       assert.deepStrictEqual({ deep: true }, (await http.get(`${URL}/root/branch2/deep/three`)).data);
     });
+
+    it("should attach middleware + handler", async () => {
+      const router = express.Router();
+
+      router.get("/with_middleware", (req, res, next) => {
+        req['something'] = true;
+        next();
+
+      }, (req, res) => {
+        res.json({ something: req['something'] });
+      })
+
+      app.use("/router", router);
+
+      assert.deepStrictEqual({ something: true }, (await http.get(`${URL}/router/with_middleware`)).data);
+    });
   });
 
   describe("Middlewares", () => {

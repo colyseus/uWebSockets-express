@@ -324,6 +324,41 @@ describe("uWS Express API Compatibility", () => {
         foo: "bar",
       }, response.data);
     })
+
+    it("should support json + urlencoded", async () => {
+      app.use(express.json());
+      app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+      app.post("/json_urlencoded", (req, res) => {
+        res.json(req.body);
+      });
+
+      const response = await http.post(`${URL}/json_urlencoded`, { hello: "world" });
+
+      assert.deepStrictEqual({
+        hello: "world",
+      }, response.data);
+    });
+
+    it("should support attaching middleware + route ", async () => {
+      app.use(express.json());
+
+      app.get("/one", (req, res, next) => {
+        req['something'] = true;
+        next();
+
+      }, (req, res) => {
+        // @ts-ignore
+        res.json({ something: req['something'] });
+      });
+
+      const response = await http.get(`${URL}/one`);
+
+      assert.deepStrictEqual({
+        something: true,
+      }, response.data);
+
+    })
+
   });
 
 });

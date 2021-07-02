@@ -81,7 +81,25 @@ export default function (app: uWS.TemplatedApp) {
    */
   app['delete'] = app['del'];
 
-  function any(method: "del" | "put" | "get" | "post" | "patch" | "options" | "head" | "any", path: string, handler: RequestHandler) {
+  function any(
+    method: "del" | "put" | "get" | "post" | "patch" | "options" | "head" | "any",
+    path: string,
+    ...handlers: RequestHandler[]
+  ) {
+    // latest handler is the actual route handler
+    const numHandlers = handlers.length;
+    const handler = handlers[numHandlers - 1];
+
+    // previous handlers are middlewares
+    if (numHandlers > 1) {
+      for (let i = 0; i < numHandlers - 1; i++) {
+        middlewares.push({
+          regexp: pathToRegexp(path),
+          handler: handlers[i]
+        })
+      }
+    }
+
     app[method](path, async (res, req) => {
       res.onAborted(onAbort.bind(this, req));
 
@@ -121,32 +139,32 @@ export default function (app: uWS.TemplatedApp) {
     });
   }
 
-  function get(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("get", path, handler);
+  function get(path: string, ...handlers: RequestHandler[]) {
+    return any("get", path, ...handlers);
   }
 
-  function post(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("post", path, handler);
+  function post(path: string, ...handlers: RequestHandler[]) {
+    return any("post", path, ...handlers);
   }
 
-  function patch(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("patch", path, handler);
+  function patch(path: string, ...handlers: RequestHandler[]) {
+    return any("patch", path, ...handlers);
   }
 
-  function options(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("options", path, handler);
+  function options(path: string, ...handlers: RequestHandler[]) {
+    return any("options", path, ...handlers);
   }
 
-  function put(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("put", path, handler);
+  function put(path: string, ...handlers: RequestHandler[]) {
+    return any("put", path, ...handlers);
   }
 
-  function del(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("del", path, handler);
+  function del(path: string, ...handlers: RequestHandler[]) {
+    return any("del", path, ...handlers);
   }
 
-  function head(path: string, handler: (req: RequestWrapper, res: ResponseWrapper) => void) {
-    return any("head", path, handler);
+  function head(path: string, ...handlers: RequestHandler[]) {
+    return any("head", path, ...handlers);
   }
 
   function bind404fallback() {

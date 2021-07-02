@@ -42,11 +42,11 @@ export class ResponseWrapper extends EventEmitter {
   }
 
   get(name: string) {
-    return this._headers[name];
+    return this._headers[name.toLowerCase()];
   }
 
   hasHeader(name: string) {
-    return (this._headers[name] !== undefined);
+    return (this._headers[name.toLowerCase()] !== undefined);
   }
 
   getHeader(name: string) {
@@ -58,7 +58,7 @@ export class ResponseWrapper extends EventEmitter {
   }
 
   removeHeader(name: string) {
-    delete this._headers[name];
+    delete this._headers[name.toLowerCase()];
   }
 
   status(code: number) {
@@ -74,26 +74,47 @@ export class ResponseWrapper extends EventEmitter {
   vary (field: string) {
     let append = "";
 
-    if (!this._headers['Vary']) {
-      this._headers['Vary'] = "";
+    if (!this._headers['vary']) {
+      this._headers['vary'] = "";
       append = field;
 
     } else {
       append = `, ${field}`;
     }
 
-    this._headers['Vary'] += append;
+    this._headers['vary'] += append;
   }
 
   send(chunk: RecognizedString) {
-    this._writes.push(chunk);
-    // this.res.write(chunk);
-    return this;
+    switch (typeof chunk) {
+      // string defaulting to html
+      case 'string':
+        if (!this.get('Content-Type')) {
+          this.type('html');
+        }
+        break;
+      case 'boolean':
+      case 'number':
+      case 'object':
+        if (chunk === null) {
+          chunk = '';
+        } else if (Buffer.isBuffer(chunk)) {
+          if (!this.get('Content-Type')) {
+            this.type('bin');
+          }
+        } else {
+          return this.json(chunk);
+        }
+        break;
+    }
+
+    return this.end(chunk as string);
   }
 
-  // alias to .send()
+  // enqueue to write during .end()
   write(chunk: RecognizedString) {
-    return this.send(chunk);
+    this._writes.push(chunk);
+    return this;
   }
 
   type(type: string) {

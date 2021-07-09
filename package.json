@@ -1,6 +1,6 @@
 {
   "name": "uwebsockets-express",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Express API compatibility layer for uWebSockets.js",
   "main": "lib/index.js",
   "scripts": {

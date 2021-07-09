@@ -1,3 +1,4 @@
+import fs from "fs";
 import mime from "mime";
 import stream from "stream";
 import EventEmitter from "events";
@@ -83,6 +84,18 @@ export class ResponseWrapper extends EventEmitter {
     }
 
     this._headers['vary'] += append;
+  }
+
+  sendFile(path: string, fn?: (err: Error) => void): void {
+    this.type(path);
+    fs.readFile(path, (err, contents) => {
+      if (err) {
+        return fn(err);
+      } else {
+        console.error(err);
+      }
+      this.send(contents);
+    });
   }
 
   send(chunk: RecognizedString) {

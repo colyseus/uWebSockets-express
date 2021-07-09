@@ -23,21 +23,24 @@ export default function (app: uWS.TemplatedApp) {
   function use(handler: RequestHandler)
   function use(path: string, handler: RequestHandler)
   function use(path: string, router: express.Router)
+  function use(path: string, ...handlers: Array<express.Router | RequestHandler>)
   function use(path: string, any: any)
   function use(any: any)
-  function use(pathOrHandler: string | RequestHandler, handlerOrRouter?: Function | express.Router) {
-    if (typeof (pathOrHandler) === "function") {
-      middlewares.push({ handler: pathOrHandler });
+  function use(pathOrHandler: string | RequestHandler, ...handlersOrRouters: Array<RequestHandler | express.Router>) {
+    [pathOrHandler, ...handlersOrRouters].forEach((handlerOrRouter) => {
+      if (typeof (pathOrHandler) === "function") {
+        middlewares.push({ handler: pathOrHandler });
 
-    } else if ((handlerOrRouter as express.Router)?.stack?.length > 0) {
-      convertExpressRouter(pathOrHandler as string, handlerOrRouter as express.Router);
+      } else if ((handlerOrRouter as express.Router)?.stack?.length > 0) {
+        convertExpressRouter(pathOrHandler as string, handlerOrRouter as express.Router);
 
-    } else if (typeof(pathOrHandler) === "string" && typeof(handlerOrRouter) === "function") {
-      middlewares.push({
-        regexp: pathToRegexp(pathOrHandler, [], { end: false, strict: false }),
-        handler: handlerOrRouter as RequestHandler
-      });
-    }
+      } else if (typeof (pathOrHandler) === "string" && typeof (handlerOrRouter) === "function") {
+        middlewares.push({
+          regexp: pathToRegexp(pathOrHandler, [], { end: false, strict: false }),
+          handler: handlerOrRouter as RequestHandler
+        });
+      }
+    })
   }
 
   function convertExpressRouter (basePath: string, router: express.Router) {

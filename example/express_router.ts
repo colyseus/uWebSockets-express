@@ -11,4 +11,6 @@ users.get("/", (req, res) => res.json({ username: "Jake Badlands" }));
 const app = expressify(uWS.App());
 app.use("/users", users);
 
+app.get("/hello", (req, res) => res.json({ hello: "hello!" }));
+
 app.listen(PORT);

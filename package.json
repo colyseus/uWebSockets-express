@@ -1,6 +1,6 @@
 {
   "name": "uwebsockets-express",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Express API compatibility layer for uWebSockets.js",
   "main": "lib/index.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "serve-index": "^1.9.1",
     "serve-static": "^1.14.1",
     "ts-node": "^10.0.0",
+    "ts-node-dev": "^1.1.8",
     "typescript": "^4.3.4",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v19.2.0"
   },

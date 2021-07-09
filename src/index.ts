@@ -51,7 +51,10 @@ export default function (app: uWS.TemplatedApp) {
           let childPath = basePath;
 
           const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
-          if (matches && matches[1]) { childPath += `/${matches[1]}`; }
+          console.log({ matches });
+          if (matches && matches[1]) {
+            childPath += `/${matches[1]}`;
+          }
 
           convertExpressRouter(childPath, layer.handle);
 
@@ -64,12 +67,21 @@ export default function (app: uWS.TemplatedApp) {
         }
 
       } else {
-        const path = layer.route.path;
+        let path: string = layer.route.path;
         const stack = layer.route.stack;
         const method = stack[0].method;
         // const handle = stack[0].handle;
 
         any(method, `${basePath}${path}`, ...stack.map((s) => s.handle));
+
+        //
+        // WORKAROUND: bind routes ending with / twice,
+        // this allows to respond to "/path" AND "/path/"
+        //
+        if (path.lastIndexOf("/") === path.length - 1) {
+          path = path.substr(0, path.length - 1);
+          any(method, `${basePath}${path}`, ...stack.map((s) => s.handle));
+        }
       }
     });
   }

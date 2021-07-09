@@ -51,7 +51,6 @@ export default function (app: uWS.TemplatedApp) {
           let childPath = basePath;
 
           const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
-          console.log({ matches });
           if (matches && matches[1]) {
             childPath += `/${matches[1]}`;
           }

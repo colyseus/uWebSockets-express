@@ -128,30 +128,25 @@ export default function (app: uWS.TemplatedApp) {
         await request['readBody']();
       }
 
-      // run middlewares
-      for (let i = 0; i < middlewares.length; i++) {
-        let next: (err?: any) => void;
-        const promise = new Promise<void>((resolve, _) => { next = () => { resolve(); }; });
+      let currentHandler: number = 0;
+      const handlers = [...middlewares, { handler }];
+      const next = () => {
+        const handler = handlers[currentHandler++];
 
-        const middleware = middlewares[i];
-
-        if (middleware.regexp) {
-          if (middleware.regexp.exec(url)) {
-            middleware.handler(request, response, next);
+        if (handler.regexp) {
+          if (handler.regexp.exec(url)) {
+            handler.handler(request, response, next);
 
           } else {
-            continue;
+            next();
           }
 
         } else {
-          middleware.handler(request, response, next);
+          handler.handler(request, response, next);
         }
-
-        await promise;
       }
 
-      // final request handler.
-      handler(request, response);
+      next();
     });
   }
 

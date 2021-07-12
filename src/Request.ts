@@ -86,7 +86,7 @@ export class RequestWrapper extends EventEmitter {
   }
 
   get originalUrl () {
-    return this.url;
+    return this._originalUrl;
   }
 
   get url () {

@@ -7,6 +7,7 @@ const PORT = 8080;
 
 // external express router
 const users = express.Router();
+
 users.get("/", (req, res) => res.json({
   path: req.path,
   originalUrl: req.originalUrl,
@@ -14,6 +15,8 @@ users.get("/", (req, res) => res.json({
 }));
 
 const app = expressify(uWS.App());
+app.use(express.static(path.join(__dirname, "static")));
+
 // const app = express();
 app.use("/users", users);
 
@@ -28,5 +31,6 @@ const monitor = express.Router();
 monitor.use(express.static(path.join(__dirname, "static")));
 monitor.get("/api", (req, res) => res.json({ data: [1, 2, 3, 4, 5] }));
 app.use("/monitor", monitor);
+
 
 app.listen(PORT);

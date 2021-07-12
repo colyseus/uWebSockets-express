@@ -6,8 +6,8 @@ import { URL } from "url";
 import { Socket } from "./Socket";
 
 export class RequestWrapper extends EventEmitter {
-  private _url: string;
-  private _path: string;
+  // private _url: string;
+  // private _path: string;
   private _baseUrl: string = "";
   private _rawquery: string;
   private _query: querystring.ParsedUrlQuery;
@@ -34,6 +34,9 @@ export class RequestWrapper extends EventEmitter {
 
     this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
+
+    // ensure originalUrl has at least "/".
+    if (!this._originalUrl) { this._originalUrl = "/"; }
 
     this.#_originalUrlParsed = new URL(`http://server${this._originalUrl}`);
 
@@ -90,11 +93,17 @@ export class RequestWrapper extends EventEmitter {
   }
 
   get url () {
-    return this._originalUrl.replace(this._baseUrl, "");
+    const url = this._originalUrl.replace(this._baseUrl, "");
+    return (!url.startsWith("/"))
+      ? `/${url}`
+      : url;
   }
 
   get path(): string {
-    return this._path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
+    const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
+    return (!path.startsWith("/"))
+      ? `/${path}`
+      : path;
   }
 
   header(name: string) {

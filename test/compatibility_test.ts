@@ -271,11 +271,28 @@ describe("uWS Express API Compatibility", () => {
       })
       app.use("/router", router);
 
-      // (CORRECT w/ express) req: { originalUrl: '/monitor/', path: '/', basePath: undefined }
-      // (WRONG w/ uWebSockets.js) req: { originalUrl: '/monitor/', path: '/monitor/', basePath: undefined }
-
       assert.deepStrictEqual({ response: true, }, (await http.get(`${URL}/router/api`)).data);
       assert.deepStrictEqual("Hello world", (await http.get(`${URL}/router/index.html`)).data);
+    });
+
+    it("urls should always start with /", async () => {
+      app.use(express.static(path.resolve(__dirname, "static")));
+
+      const router = express.Router();
+      router.get("/", (req, res) => {
+        res.json({
+          path: req.path,
+          url: req.url,
+          originalUrl: req.originalUrl,
+        });
+      })
+      app.use("/auth", router);
+
+      assert.deepStrictEqual({
+        path: "/",
+        url: "/?token=xxx",
+        originalUrl: "/auth?token=xxx",
+      }, (await http.get(`${URL}/auth?token=xxx`)).data);
     });
 
   });

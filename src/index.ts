@@ -18,6 +18,8 @@ function onAbort(req: RequestWrapper) {
 type RequestHandler = (req: RequestWrapper, res: ResponseWrapper, next?: NextFunction) => void;
 type MiddlewareList = Array<{ regexp?: RegExp, handler: RequestHandler }>;
 
+const rootRegexpPath = pathToRegexp("/", [], { end: false, strict: false });
+
 export default function (app: uWS.TemplatedApp) {
   const middlewares: MiddlewareList = [];
 
@@ -49,8 +51,9 @@ export default function (app: uWS.TemplatedApp) {
     const routesBound = new Set<RegExp>();
 
     // add route middleware to change `baseUrl` of request
+    const basePathRegexp = pathToRegexp(baseUrl, [], { end: false, strict: false });
     localMiddlewares.push({
-      regexp: pathToRegexp(baseUrl, [], { end: false, strict: false }),
+      regexp: basePathRegexp,
       handler: (req, res, next) => {
         req.baseUrl = baseUrl;
         next();
@@ -71,8 +74,17 @@ export default function (app: uWS.TemplatedApp) {
           convertExpressRouter(childPath, layer.handle);
 
         } else {
+          // FIXME:
+          // layer.regexp may conflict with other registered paths outside this router.
+          // (resulting in the middleware being called in routes that it shouldn't)
+
+          // avoid conflict for "/" path. Use base route regexp instead.
+          const regexp = (rootRegexpPath.toString() === layer.regexp.toString())
+            ? basePathRegexp
+            : layer.regexp
+
           // middleware
-          localMiddlewares.push({ regexp: layer.regexp, handler: layer.handle, });
+          localMiddlewares.push({ regexp, handler: layer.handle, });
         }
 
       } else {

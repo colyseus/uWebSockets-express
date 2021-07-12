@@ -1,4 +1,5 @@
 import uWS from "uWebSockets.js";
+import path from "path";
 import express from "express";
 import assert from "assert";
 import cors from "cors";
@@ -261,6 +262,22 @@ describe("uWS Express API Compatibility", () => {
         something: true,
       }, (await http.get(`${URL}/router/router`)).data);
     });
+
+    it("should use middlewares on basePath of router", async () => {
+      const router = express.Router();
+      router.use(express.static(path.resolve(__dirname, "static")));
+      router.get("/api", (req, res) => {
+        res.json({ response: true });
+      })
+      app.use("/router", router);
+
+      // (CORRECT w/ express) req: { originalUrl: '/monitor/', path: '/', basePath: undefined }
+      // (WRONG w/ uWebSockets.js) req: { originalUrl: '/monitor/', path: '/monitor/', basePath: undefined }
+
+      assert.deepStrictEqual({ response: true, }, (await http.get(`${URL}/router/api`)).data);
+      assert.deepStrictEqual("Hello world", (await http.get(`${URL}/router/index.html`)).data);
+    });
+
   });
 
   describe("Middlewares", () => {

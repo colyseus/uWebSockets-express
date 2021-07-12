@@ -16,9 +16,10 @@ function onAbort(req: RequestWrapper) {
 }
 
 type RequestHandler = (req: RequestWrapper, res: ResponseWrapper, next?: NextFunction) => void;
+type MiddlewareList = Array<{ regexp?: RegExp, handler: RequestHandler }>;
 
 export default function (app: uWS.TemplatedApp) {
-  const middlewares: Array<{ regexp?: RegExp, handler: RequestHandler }> = [];
+  const middlewares: MiddlewareList = [];
 
   function use(handler: RequestHandler)
   function use(path: string, handler: RequestHandler)
@@ -43,12 +44,24 @@ export default function (app: uWS.TemplatedApp) {
     })
   }
 
-  function convertExpressRouter (basePath: string, router: express.Router) {
-    router.stack.forEach(layer => {
+  function convertExpressRouter (baseUrl: string, router: express.Router) {
+    const localMiddlewares: MiddlewareList = [];
+    const routesBound = new Set<RegExp>();
+
+    // add route middleware to change `baseUrl` of request
+    localMiddlewares.push({
+      regexp: pathToRegexp(baseUrl, [], { end: false, strict: false }),
+      handler: (req, res, next) => {
+        req.baseUrl = baseUrl;
+        next();
+      }
+    });
+
+    router.stack.forEach((layer, i) => {
       if (!layer.route) {
         if (layer.name === "router") {
           // nested route!
-          let childPath = basePath;
+          let childPath = baseUrl;
 
           const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
           if (matches && matches[1]) {
@@ -59,10 +72,7 @@ export default function (app: uWS.TemplatedApp) {
 
         } else {
           // middleware
-          middlewares.push({
-            regexp: layer.regexp,
-            handler: layer.handle,
-          });
+          localMiddlewares.push({ regexp: layer.regexp, handler: layer.handle, });
         }
 
       } else {
@@ -71,7 +81,7 @@ export default function (app: uWS.TemplatedApp) {
         const method = stack[0].method;
         // const handle = stack[0].handle;
 
-        any(method, `${basePath}${path}`, ...stack.map((s) => s.handle));
+        any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
 
         //
         // WORKAROUND: bind routes ending with / twice,
@@ -79,10 +89,20 @@ export default function (app: uWS.TemplatedApp) {
         //
         if (path.lastIndexOf("/") === path.length - 1) {
           path = path.substr(0, path.length - 1);
-          any(method, `${basePath}${path}`, ...stack.map((s) => s.handle));
+          any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
         }
+
+        routesBound.add(layer.regexp);
       }
     });
+
+    localMiddlewares.forEach((mid) => {
+      if (!routesBound.has(mid.regexp)) {
+        any("any", `${baseUrl}/*`);
+      }
+    });
+
+    middlewares.push(...localMiddlewares);
   }
 
   // const expressApp = express();
@@ -129,9 +149,23 @@ export default function (app: uWS.TemplatedApp) {
       }
 
       let currentHandler: number = 0;
-      const handlers = [...middlewares, { handler }];
+
+      const handlers = [...middlewares];
+
+      // handler may not have been provided (root middleware request)
+      if (handler) {
+        handlers.push({ handler });
+      }
+
       const next = () => {
         const handler = handlers[currentHandler++];
+
+        // skip if reached the end.
+        // force to end the response.
+        if (!handler) {
+          response.end();
+          return;
+        }
 
         if (handler.regexp) {
           if (handler.regexp.exec(url)) {

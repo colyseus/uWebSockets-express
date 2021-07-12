@@ -8,6 +8,7 @@ import { Socket } from "./Socket";
 export class RequestWrapper extends EventEmitter {
   private _url: string;
   private _path: string;
+  private _baseUrl: string = "";
   private _rawquery: string;
   private _query: querystring.ParsedUrlQuery;
   private _method: string;
@@ -31,6 +32,10 @@ export class RequestWrapper extends EventEmitter {
 
     this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
+
+    if (this._rawquery) {
+      this._originalUrl += `?${this._rawquery}`;
+    }
   }
 
   get ip () {
@@ -68,6 +73,14 @@ export class RequestWrapper extends EventEmitter {
     return this._query;
   }
 
+  get baseUrl() {
+    return this._baseUrl;
+  }
+
+  set baseUrl(url) {
+    this._baseUrl = url;
+  }
+
   get originalUrl () {
     return this.url;
   }
@@ -75,8 +88,7 @@ export class RequestWrapper extends EventEmitter {
   get url () {
     if (!this._url) {
       this._url = this._originalUrl;
-      const query = this._rawquery;
-      if (query) { this._url += `?${query}`; }
+      this._url = this._url.replace(this._baseUrl, "");
     }
 
     return this._url;
@@ -84,8 +96,8 @@ export class RequestWrapper extends EventEmitter {
 
   get path(): string {
     if (!this._path) {
-      const parsedURL = new URL(`http://server${this.url}`);
-      this._path = parsedURL.pathname;
+      const parsedURL = new URL(`http://server${this._originalUrl}`);
+      this._path = parsedURL.pathname.replace(this._baseUrl, "");
     }
     return this._path;
   }
@@ -131,4 +143,5 @@ export class RequestWrapper extends EventEmitter {
       });
     })
   }
+
 }

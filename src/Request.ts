@@ -19,6 +19,8 @@ export class RequestWrapper extends EventEmitter {
 
   public socket = new Socket(false, true);
 
+  #_originalUrlParsed: URL;
+
   constructor(
     private req: uWS.HttpRequest,
     private res: uWS.HttpResponse,
@@ -32,6 +34,8 @@ export class RequestWrapper extends EventEmitter {
 
     this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
+
+    this.#_originalUrlParsed = new URL(`http://server${this._originalUrl}`);
 
     if (this._rawquery) {
       this._originalUrl += `?${this._rawquery}`;
@@ -86,20 +90,11 @@ export class RequestWrapper extends EventEmitter {
   }
 
   get url () {
-    if (!this._url) {
-      this._url = this._originalUrl;
-      this._url = this._url.replace(this._baseUrl, "");
-    }
-
-    return this._url;
+    return this._originalUrl.replace(this._baseUrl, "");
   }
 
   get path(): string {
-    if (!this._path) {
-      const parsedURL = new URL(`http://server${this._originalUrl}`);
-      this._path = parsedURL.pathname.replace(this._baseUrl, "");
-    }
-    return this._path;
+    return this._path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
   }
 
   header(name: string) {

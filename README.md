@@ -37,6 +37,7 @@ app.listen(8000);
   - ✅ res.location()
   - ✅ res.redirect()
   - ✅ res.send()
+  - ✅ res.sendFile()
   - ✅ res.sendStatus()
   - ✅ res.set()
   - ✅ res.status()
@@ -52,7 +53,6 @@ app.listen(8000);
   - ❌ res.format()
   - ❌ res.links()
   - ❌ res.render()
-  - ❌ res.sendFile()
 - Request API
   - ✅ req.baseUrl
   - ✅ req.body

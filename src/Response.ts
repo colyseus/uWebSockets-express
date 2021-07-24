@@ -7,7 +7,7 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Socket } from "./Socket";
 
 export class ResponseWrapper extends EventEmitter {
-  private _headers: { [name: string]: string } = {};
+  private _headers: { [name: string]: string | string[] } = {};
   private _writes: any[] = [];
 
   public statusCode: number = 200;
@@ -164,7 +164,7 @@ export class ResponseWrapper extends EventEmitter {
       end();
   }
 
-  set(name: string | object, value?: string) {
+  set(name: string | object, value?: string | string[]) {
     if (typeof(name) === "string") {
       name = name.toLowerCase();
       if (name !== 'content-length') {
@@ -182,12 +182,25 @@ export class ResponseWrapper extends EventEmitter {
     return this;
   }
 
+  append(name: string, val: string | string[]) {
+    const prev = this.get(name);
+    let value = val;
+    if (prev) {
+      // concat the new and prev vals
+      value = Array.isArray(prev) ? prev.concat(val)
+        : Array.isArray(val) ? [prev].concat(val)
+        : [prev, val];
+    }
+  
+    return this.set(name, value);
+  }
+
   // alias to "set"
   header(name: string | object, value?: string) {
     return this.set(name, value);
   }
 
-  writeHead(code: number, headers: { [name: string]: string } = this._headers) {
+  writeHead(code: number, headers: { [name: string]: string | string[] } = this._headers) {
     if (this.headersSent) {
       console.warn("writeHead: headers were already sent.")
       return;
@@ -199,7 +212,13 @@ export class ResponseWrapper extends EventEmitter {
 
     // write headers
     for (const name in headers) {
-      this.res.writeHeader(name, headers[name]?.toString());
+      if(Array.isArray(headers[name])) {
+        for(const headerValue of headers[name]) {
+          this.res.writeHeader(name, headerValue?.toString());
+        }
+      } else {
+        this.res.writeHeader(name, headers[name]?.toString());
+      }
     }
 
     this.headersSent = true;

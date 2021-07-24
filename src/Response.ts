@@ -54,7 +54,7 @@ export class ResponseWrapper extends EventEmitter {
     this.get(name);
   }
 
-  setHeader(name: string, value: string) {
+  setHeader(name: string, value: string | string[]) {
     this.set(name, value);
   }
 

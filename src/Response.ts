@@ -196,7 +196,7 @@ export class ResponseWrapper extends EventEmitter {
   }
 
   // alias to "set"
-  header(name: string | object, value?: string) {
+  header(name: string | object, value?: string | string[]) {
     return this.set(name, value);
   }
 

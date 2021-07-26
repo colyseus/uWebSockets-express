@@ -94,6 +94,17 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual("final", response.data);
     });
 
+    it("append()", async () => {
+      app.get("/append", (req, res) => {
+        res.append("my-cookie", "hello");
+        res.append("my-cookie", "world");
+        res.end();
+      });
+
+      const response = (await http.get(`${URL}/append`)).headers;
+      assert.strictEqual("hello, world", response['my-cookie']);
+    })
+
   });
 
   describe("request", () => {

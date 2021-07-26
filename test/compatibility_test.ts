@@ -3,10 +3,11 @@ import path from "path";
 import express from "express";
 import assert from "assert";
 import cors from "cors";
-import bodyParser from "body-parser";
 import expressify from "../src";
 import { StatusCodes } from "http-status-codes";
 import http from "axios";
+import rawHttp from 'http';
+import url from 'url';
 
 const PORT = 9999;
 const URL = `http://localhost:${PORT}`;
@@ -465,6 +466,33 @@ describe("uWS Express API Compatibility", () => {
       }, response.data);
 
     })
+
+  });
+
+  describe("Edge cases", () => {
+
+    it("should not error when content-length is 0, but body is present", (done) => {
+      app.use(express.json());
+      app.post("/content_length", (req, res) => res.json({ success: true }));
+
+      const opts = url.parse(`${URL}/content_length`)
+      const data = { "email": "mymail@gmail.com", "password": "test" };
+
+      // @ts-ignore
+      opts.method = "POST";
+      // @ts-ignore
+      opts.headers = {};
+      // @ts-ignore
+      opts.headers['Content-Type'] = 'application/json';
+
+      rawHttp.request(opts, function (res) {
+        res.on("data", (chunk) => {
+          assert.strictEqual('{"success":true}', chunk.toString());
+          done();
+        });
+        res.read();
+      }).end(JSON.stringify(data));
+    });
 
   });
 

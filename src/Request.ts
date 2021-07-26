@@ -14,8 +14,8 @@ export class RequestWrapper extends EventEmitter {
   private _method: string;
   private _headers: http.IncomingHttpHeaders = {};
   private _params: {[name: string]: string};
+  private _bodydata: any;
   private _rawbody: any;
-  private _bodyData: {[name: string]: string};
 
   public socket = new Socket(false, true);
 
@@ -50,11 +50,11 @@ export class RequestWrapper extends EventEmitter {
   }
 
   set body (_body: any) {
-    this._rawbody = _body;
+    this._bodydata = _body;
   }
 
   get body () {
-    return this._rawbody;
+    return this._bodydata || this._rawbody;
   }
 
   get headers (): http.IncomingHttpHeaders {
@@ -111,7 +111,7 @@ export class RequestWrapper extends EventEmitter {
   }
 
   on(event: string | symbol, listener: (...args: any[]) => void) {
-    if (event === 'data' && this._rawbody) {
+    if (event === 'data' && this._rawbody !== undefined) {
       /**
        * req.body is synchronously before any middleware runs.
        * here we're mimicking to trigger 'data' + 'end' + 'close' right at the moment the event is registered.
@@ -132,17 +132,12 @@ export class RequestWrapper extends EventEmitter {
       let body: Buffer;
 
       this.res.onData((arrayBuffer, isLast) => {
-        // this.emit('data', arrayBuffer);
-
         const chunk = Buffer.from(arrayBuffer);
         body = body ? Buffer.concat([body, chunk]) : chunk;
 
         if (isLast) {
           this._rawbody = body.toString();
           resolve(this._rawbody !== "");
-
-          // this.emit('end');
-          // this.emit('close');
         }
       });
     })

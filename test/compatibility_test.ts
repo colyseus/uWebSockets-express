@@ -192,6 +192,25 @@ describe("uWS Express API Compatibility", () => {
       const { data } = (await http.get(`${URL}/ip`));
       assert.strictEqual(39, data.ip.length);
     });
+
+    it("parse small request body", async () => {
+      app.post("/small_body", (req, res) => res.end(req.body));
+
+      const { data } = (await http.post(`${URL}/small_body`, "small body"));
+      assert.strictEqual("small body", data);
+    })
+
+    it("parse large request body", async () => {
+      app.post("/large_body", (req, res) => res.end(req.body));
+
+      let largeBody: string = "";
+      for (let i = 0; i < 100; i++) {
+        largeBody += "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*(),./;'[]<>?:{}-=_+\"`~";
+      }
+
+      const { data } = (await http.post(`${URL}/large_body`, largeBody));
+      assert.strictEqual(largeBody, data);
+    })
   });
 
   describe("express.Router compatibility", () => {

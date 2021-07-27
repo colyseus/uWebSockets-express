@@ -214,25 +214,29 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual(largeBody, data);
     })
 
-    xit("should support aborting the request", async () => {
+    it("should support aborting the request", async () => {
       app.use(express.json());
       app.post("/will_abort", async (req, res) => {
-        setTimeout(() =>
-          res.json(req.body), 1000);
+        setTimeout(() => {
+          res.json(req.body);
+        }, 500);
       });
 
       const cancelTokenSource = http.CancelToken.source();
-
       const request = http.post(`${URL}/will_abort`, { hello: "world" }, {
         cancelToken: cancelTokenSource.token
       });
+      await timers.setTimeout(350);
 
-      await timers.setTimeout(500);
+      cancelTokenSource.cancel("cancelled");
 
-      cancelTokenSource.cancel();
+      try {
+        await request;
+      } catch (e) {
+        assert.strictEqual(e.message, "cancelled");
+      }
 
-      const response = await request;
-      assert.ok(true, "should not throw exception");
+      assert.ok(true, "should not have throw an exception");
     });
   });
 

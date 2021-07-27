@@ -8,6 +8,7 @@ import { StatusCodes } from "http-status-codes";
 import http from "axios";
 import rawHttp from 'http';
 import url from 'url';
+import timers from "timers/promises";
 
 const PORT = 9999;
 const URL = `http://localhost:${PORT}`;
@@ -212,6 +213,27 @@ describe("uWS Express API Compatibility", () => {
       const { data } = (await http.post(`${URL}/large_body`, largeBody));
       assert.strictEqual(largeBody, data);
     })
+
+    xit("should support aborting the request", async () => {
+      app.use(express.json());
+      app.post("/will_abort", async (req, res) => {
+        setTimeout(() =>
+          res.json(req.body), 1000);
+      });
+
+      const cancelTokenSource = http.CancelToken.source();
+
+      const request = http.post(`${URL}/will_abort`, { hello: "world" }, {
+        cancelToken: cancelTokenSource.token
+      });
+
+      await timers.setTimeout(500);
+
+      cancelTokenSource.cancel();
+
+      const response = await request;
+      assert.ok(true, "should not throw exception");
+    });
   });
 
   describe("express.Router compatibility", () => {
@@ -476,7 +498,7 @@ describe("uWS Express API Compatibility", () => {
       app.post("/content_length", (req, res) => res.json({ success: true }));
 
       const opts = url.parse(`${URL}/content_length`)
-      const data = { "email": "mymail@gmail.com", "password": "test" };
+      const data = { email: "mymail@gmail.com", password: "test" };
 
       // @ts-ignore
       opts.method = "POST";
@@ -484,6 +506,33 @@ describe("uWS Express API Compatibility", () => {
       opts.headers = {};
       // @ts-ignore
       opts.headers['Content-Type'] = 'application/json';
+      // @ts-ignore
+      opts.headers['Content-Length'] = '0';
+
+      rawHttp.request(opts, function (res) {
+        res.on("data", (chunk) => {
+          assert.strictEqual('{"success":true}', chunk.toString());
+          done();
+        });
+        res.read();
+      }).end(JSON.stringify(data));
+    });
+
+    it("should not error when content-length is higher than actual body", (done) => {
+      app.use(express.json());
+      app.post("/content_length_higher", (req, res) => res.json({ success: true }));
+
+      const opts = url.parse(`${URL}/content_length_higher`)
+      const data = { email: "mymail@gmail.com" };
+
+      // @ts-ignore
+      opts.method = "POST";
+      // @ts-ignore
+      opts.headers = {};
+      // @ts-ignore
+      opts.headers['Content-Type'] = 'application/json';
+      // @ts-ignore
+      opts.headers['Content-Length'] = '50';
 
       rawHttp.request(opts, function (res) {
         res.on("data", (chunk) => {

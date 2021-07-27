@@ -14,6 +14,7 @@ export class ResponseWrapper extends EventEmitter {
   public socket = new Socket(true, false);
   public headersSent: boolean = false;
   public finished: boolean = false;
+  public aborted: boolean;
 
   constructor(private res: uWS.HttpResponse) {
     super();
@@ -25,14 +26,16 @@ export class ResponseWrapper extends EventEmitter {
     let body = chunk;
     if (encoding) { body = Buffer.from(chunk, encoding).toString(); }
 
-    // write status + headers
-    this.writeHead(this.statusCode || this.statusCode, this._headers);
+    if (this.socket.writable) {
+      // write status + headers
+      this.writeHead(this.statusCode || this.statusCode, this._headers);
 
-    // dequeue writes
-    this._writes.forEach((chunk) => this.res.write(chunk));
+      // dequeue writes
+      this._writes.forEach((chunk) => this.res.write(chunk));
 
-    // write response
-    this.res.end(body);
+      // write response
+      this.res.end(body);
+    }
 
     this.socket.writable = false;
 
@@ -191,7 +194,7 @@ export class ResponseWrapper extends EventEmitter {
         : Array.isArray(val) ? [prev].concat(val)
         : [prev, val];
     }
-  
+
     return this.set(name, value);
   }
 

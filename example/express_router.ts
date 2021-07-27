@@ -14,8 +14,10 @@ users.get("/", (req, res) => res.json({
   baseUrl: req.baseUrl,
 }));
 
-// const app = expressify(uWS.App());
-const app = express();
+users.post("/login", (req, res) => res.end("hello!"));
+
+const app = expressify(uWS.App());
+// const app = express();
 
 app.use(express.static(path.join(__dirname, "static")));
 app.use("/users", users);

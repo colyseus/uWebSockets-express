@@ -5,6 +5,8 @@ import EventEmitter from "events";
 import { URL } from "url";
 import { Socket } from "./Socket";
 
+const READ_BODY_MAX_TIME = 500;
+
 export class RequestWrapper extends EventEmitter {
   // private _url: string;
   // private _path: string;
@@ -17,6 +19,7 @@ export class RequestWrapper extends EventEmitter {
   private _bodydata: any;
   private _rawbody: any;
 
+  public aborted: boolean;
   public socket = new Socket(false, true);
 
   #_originalUrlParsed: URL;
@@ -131,11 +134,24 @@ export class RequestWrapper extends EventEmitter {
     return new Promise<boolean>((resolve, reject) => {
       let body: Buffer;
 
+      //
+      // ensure request is not halted when an invalid content-length is sent by the client
+      // https://github.com/endel/uWebSockets-express/issues/9
+      //
+      const rejectionTimeout = setTimeout(() => {
+        if (body) {
+          this._rawbody = body.toString();
+          this.headers['content-length'] = String(body.length);
+        }
+        reject();
+      }, READ_BODY_MAX_TIME);
+
       this.res.onData((arrayBuffer, isLast) => {
         const chunk = Buffer.from(arrayBuffer);
-        body = body && body.length !== 0 ? Buffer.concat([body, chunk]) : chunk;
+        body = (body && body.length !== 0) ? Buffer.concat([body, chunk]) : chunk;
 
         if (isLast) {
+          clearTimeout(rejectionTimeout);
           this._rawbody = body.toString();
           resolve(this._rawbody !== "");
         }

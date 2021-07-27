@@ -10,9 +10,10 @@ function getUrlParameters (url: string) {
   return (url.match(/:([a-zA-Z0-9\_]+)/gi) || []).map((param) => param.substr(1));
 }
 
-function onAbort(req: RequestWrapper) {
-  // req.socket.readable = false;
-  console.warn("request aborted:", req.url);
+function onAbort(req: RequestWrapper, res: ResponseWrapper) {
+  req.socket.readable = false;
+  res.socket.writable = false;
+  res.aborted = true;
 }
 
 type RequestHandler = (req: RequestWrapper, res: ResponseWrapper, next?: NextFunction) => void;
@@ -149,15 +150,19 @@ export default function (app: uWS.TemplatedApp) {
     }
 
     app[method](path, async (res, req) => {
-      res.onAborted(onAbort.bind(this, req));
-
       const url = req.getUrl();
       const request = new RequestWrapper(req, res, url, getUrlParameters(path));
       const response = new ResponseWrapper(res);
 
+      res.onAborted(onAbort.bind(this, request, response));
+
       // read body data!
       if (request.headers['content-length']) {
-        await request['readBody']();
+        try {
+          await request['readBody']();
+        } catch (e) {
+          console.warn("uWebSockets-express: failed reading request body at", url);
+        }
       }
 
       let currentHandler: number = 0;
@@ -170,6 +175,9 @@ export default function (app: uWS.TemplatedApp) {
       }
 
       const next = () => {
+        // skip if aborted.
+        if (response.aborted) { return; }
+
         const handler = handlers[currentHandler++];
 
         // skip if reached the end.

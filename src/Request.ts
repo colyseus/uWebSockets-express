@@ -133,7 +133,7 @@ export class RequestWrapper extends EventEmitter {
 
       this.res.onData((arrayBuffer, isLast) => {
         const chunk = Buffer.from(arrayBuffer);
-        body = body ? Buffer.concat([body, chunk]) : chunk;
+        body = body && body.length !== 0 ? Buffer.concat([body, chunk]) : chunk;
 
         if (isLast) {
           this._rawbody = body.toString();

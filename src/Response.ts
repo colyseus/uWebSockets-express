@@ -1,10 +1,11 @@
 import fs from "fs";
 import mime from "mime";
-import stream from "stream";
 import EventEmitter from "events";
 import uWS, { RecognizedString } from "uWebSockets.js";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Socket } from "./Socket";
+import type { Application, RenderCallback } from "./Application";
+import { response } from "express";
 
 export class ResponseWrapper extends EventEmitter {
   private _headers: { [name: string]: string | string[] } = {};
@@ -15,9 +16,18 @@ export class ResponseWrapper extends EventEmitter {
   public headersSent: boolean = false;
   public finished: boolean = false;
   public aborted: boolean;
+  public locals: any = {};
 
-  constructor(private res: uWS.HttpResponse) {
+  constructor(
+    private res: uWS.HttpResponse,
+    private req: any,
+  ) {
     super();
+  }
+
+  render(view: string, options?: any, callback?: (err: Error, html: string) => void): void
+  render(view: string, callback?: (err: Error, html: string) => void): void {
+    response.render.apply(this, arguments);
   }
 
   end(chunk?: string, encoding?: BufferEncoding) {

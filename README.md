@@ -30,6 +30,7 @@ app.listen(8000);
 - ✅ Supports existing Express Router instances
 - Response API
   - ✅ res.headersSent
+  - ✅ res.locals
   - ✅ res.append()
   - ✅ res.end()
   - ✅ res.get()
@@ -37,6 +38,7 @@ app.listen(8000);
   - ✅ res.jsonp()
   - ✅ res.location()
   - ✅ res.redirect()
+  - ✅ res.render()
   - ✅ res.send()
   - ✅ res.sendFile()
   - ✅ res.sendStatus()
@@ -45,14 +47,12 @@ app.listen(8000);
   - ✅ res.type()
   - ✅ res.vary()
   - ❌ res.app
-  - ❌ res.locals
   - ❌ res.attachment()
   - ❌ res.cookie()
   - ❌ res.clearCookie()
   - ❌ res.download()
   - ❌ res.format()
   - ❌ res.links()
-  - ❌ res.render()
 - Request API
   - ✅ req.baseUrl
   - ✅ req.body

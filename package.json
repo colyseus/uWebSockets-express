@@ -1,6 +1,6 @@
 {
   "name": "uwebsockets-express",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "description": "Express API compatibility layer for uWebSockets.js",
   "main": "lib/index.js",
   "scripts": {
@@ -21,6 +21,7 @@
     "express": "^4.17.1",
     "express-session": "^1.17.2",
     "mocha": "^9.0.1",
+    "pug": "^3.0.2",
     "serve-index": "^1.9.1",
     "serve-static": "^1.14.1",
     "ts-node": "^10.0.0",

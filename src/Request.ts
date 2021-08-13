@@ -4,6 +4,7 @@ import querystring from "querystring";
 import EventEmitter from "events";
 import { URL } from "url";
 import { Socket } from "./Socket";
+import { request } from "express";
 
 const READ_BODY_MAX_TIME = 500;
 
@@ -29,11 +30,19 @@ export class RequestWrapper extends EventEmitter {
     private res: uWS.HttpResponse,
     private _originalUrl: string,
     private parameterNames: string[],
+    private app: any,
   ) {
     super();
 
     this._headers = {};
-    this.req.forEach((k, v) => { this._headers[k] = v; });
+    this.req.forEach((key, value) => {
+      this._headers[key] = value;
+
+      // workaround: also consider 'referrer'
+      if (key === "referer") {
+        this._headers['referrer'] = value;
+      }
+    });
 
     this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
@@ -109,8 +118,17 @@ export class RequestWrapper extends EventEmitter {
       : path;
   }
 
+  get(name: string) {
+    return this.header(name);
+  }
+
   header(name: string) {
-    return this.req.getHeader(name);
+    name = name.toLowerCase();
+    return this._headers[name] || this.req.getHeader(name);
+  }
+
+  accepts(...args: any[]): string | false {
+    return request.accepts.apply(this, arguments);
   }
 
   on(event: string | symbol, listener: (...args: any[]) => void) {

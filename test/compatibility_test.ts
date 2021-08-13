@@ -94,6 +94,7 @@ describe("uWS Express API Compatibility", () => {
       });
 
       const response = await http.get(`${URL}/redirect`);
+      console.log(response);
       assert.strictEqual("final", response.data);
     });
 
@@ -183,13 +184,17 @@ describe("uWS Express API Compatibility", () => {
         res.json(req.headers);
       });
 
-      const response = await http.get(`${URL}/headers`, {headers: {
-        one: "1",
-        cookie: "mycookie"
-      }});
+      const response = await http.get(`${URL}/headers`, {
+        headers: {
+          one: "1",
+          cookie: "mycookie",
+          TheyAreAllConvertedToLowerCase: "ok"
+        }
+      });
 
       assert.strictEqual("1", response.data.one);
       assert.strictEqual("mycookie", response.data.cookie);
+      assert.strictEqual("ok", response.data.theyareallconvertedtolowercase);
     });
 
     it("method / path / url", async () => {

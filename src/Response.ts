@@ -157,24 +157,28 @@ export class ResponseWrapper extends EventEmitter {
     this.end(`callback(${JSON.stringify(body)})`);
   }
 
-  location(path: string) {
+  location(url: string) {
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Location
-    this.set("Location", path);
-    return this;
+    return response.location.apply(this, arguments);
   }
 
   redirect(path: string)
   redirect(code: number, path: string)
   redirect(codeOrPath: number | string, path?: string) {
-    if (arguments.length === 1) {
-      path = codeOrPath as string;
-      codeOrPath = 302;
-    }
+    return response.redirect.apply(this, arguments);
+    // if (arguments.length === 1) {
+    //   path = codeOrPath as string;
+    //   codeOrPath = 302;
+    // }
 
-    this.
-      status(codeOrPath as number).
-      location(path).
-      end();
+    // this.
+    //   status(codeOrPath as number).
+    //   location(path).
+    //   end();
+  }
+
+  format(obj: any) {
+    return response.format.apply(this, arguments);
   }
 
   set(name: string | object, value?: string | string[]) {

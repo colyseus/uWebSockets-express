@@ -17,14 +17,19 @@ function render(path, options, fn) {
     fn(null, str);
   });
 }
-app.set('view engine', 'pug')
-// app.engine('html', render);
+app.set('view engine', 'html')
+app.engine('html', render);
 
 app.use(express.static(path.join(__dirname, "static")));
 app.get("/render", (req, res) => {
   res.locals.title = "ABC";
   res.locals.message = "It works!";
   res.render('view', { title: "Rendering" });
+});
+
+app.get("/redirect", (req, res) => {
+  console.log("Let's redirect back!");
+  res.redirect('back');
 });
 
 app.listen(PORT, () => console.log(`Listening at ${PORT}`));

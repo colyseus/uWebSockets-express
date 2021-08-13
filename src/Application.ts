@@ -108,8 +108,8 @@ export class Application extends EventEmitter {
 
     this.uWSApp[method](path, async (res, req) => {
       const url = req.getUrl();
-      const request = new RequestWrapper(req, res, url, getUrlParameters(path));
-      const response = new ResponseWrapper(res, { app: this });
+      const request = new RequestWrapper(req, res, url, getUrlParameters(path), this);
+      const response = new ResponseWrapper(res, request);
 
       res.onAborted(onAbort.bind(this, request, response));
 

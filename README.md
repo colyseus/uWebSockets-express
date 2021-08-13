@@ -62,6 +62,7 @@ app.listen(8000);
   - ✅ req.params
   - ✅ req.path
   - ✅ req.query
+  - ✅ req.accepts()
   - ✅ req.get()
   - ✅ req.param()
   - ❌ req.app
@@ -76,7 +77,6 @@ app.listen(8000);
   - ❌ req.stale
   - ❌ req.subdomains
   - ❌ req.xhr
-  - ❌ req.accepts()
   - ❌ req.acceptsCharsets()
   - ❌ req.acceptsEncodings()
   - ❌ req.acceptsLanguages()

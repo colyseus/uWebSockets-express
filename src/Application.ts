@@ -199,10 +199,11 @@ export class Application extends EventEmitter {
       cb?.();
     });
 
+    const self = this;
     return {
       close() {
-        uWS.us_listen_socket_close(this.listeningSocket);
-        this.listeningSocket = null;
+        uWS.us_listen_socket_close(self.listeningSocket);
+        self.listeningSocket = null;
       }
     };
   }

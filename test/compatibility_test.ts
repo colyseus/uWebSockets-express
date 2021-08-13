@@ -1,4 +1,5 @@
 import uWS from "uWebSockets.js";
+import fs from "fs";
 import path from "path";
 import express from "express";
 import assert from "assert";
@@ -106,6 +107,28 @@ describe("uWS Express API Compatibility", () => {
       const response = (await http.get(`${URL}/append`)).headers;
       assert.strictEqual("hello, world", response['my-cookie']);
     })
+
+    it("render()", async () => {
+      app.set('views', path.join(__dirname, 'views'));
+      app.set('view engine', 'html');
+      app.engine('html', function render (path: any, options: any, fn: any) {
+        fs.readFile(path, 'utf8', function (err, str) {
+          if (err) return fn(err);
+          str = str.replace('{{title}}', options.title);
+          str = str.replace('{{message}}', options.message);
+          fn(null, str);
+        });
+      });
+
+      app.get("/render", (req, res) => {
+        res.locals.title = "ABC";
+        res.locals.message = "It works!";
+        res.render('render', { title: "Rendering" });
+      });
+
+      const body = (await http.get(`${URL}/render`)).data;
+      assert.strictEqual("RenderingIt works!", body);
+    });
 
   });
 

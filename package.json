@@ -1,6 +1,6 @@
 {
   "name": "uwebsockets-express",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "description": "Express API compatibility layer for uWebSockets.js",
   "main": "lib/index.js",
   "scripts": {
@@ -8,6 +8,10 @@
     "test": "mocha test/*.ts --require ts-node/register"
   },
   "author": "Endel Dreyer",
+  "files": [
+    "lib",
+    "README.md"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/express": "^4.17.12",

@@ -42,6 +42,8 @@ export class Application extends EventEmitter {
 
     // perform original express initialization
     application.init.apply(this, arguments);
+
+    this.bind404fallback();
   }
 
   public engine(ext: string, fn: EngineCallback) {
@@ -192,8 +194,6 @@ export class Application extends EventEmitter {
   }
 
   public listen(port?: number, cb?: () => void) {
-    this.bind404fallback();
-
     this.uWSApp.listen(port, (listenSocket: any) => {
       this.listeningSocket = listenSocket;
       cb?.();

@@ -19,6 +19,7 @@ export class RequestWrapper extends EventEmitter {
   private _params: {[name: string]: string};
   private _bodydata: any;
   private _rawbody: any;
+  private _remoteAddress: ArrayBuffer;
 
   public aborted: boolean;
   public socket = new Socket(false, true);
@@ -46,6 +47,7 @@ export class RequestWrapper extends EventEmitter {
 
     this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
+    this._remoteAddress = this.res.getRemoteAddressAsText();
 
     // ensure originalUrl has at least "/".
     if (!this._originalUrl) { this._originalUrl = "/"; }
@@ -58,7 +60,7 @@ export class RequestWrapper extends EventEmitter {
   }
 
   get ip () {
-    return Buffer.from(this.res.getRemoteAddressAsText()).toString();
+    return Buffer.from(this._remoteAddress).toString();
   }
 
   set body (_body: any) {

@@ -2,31 +2,31 @@ import uWS from "uWebSockets.js";
 import EventEmitter from "events";
 import express, { NextFunction, application } from "express";
 
-import pathToRegexp from "path-to-regexp";
+// import pathToRegexp from "path-to-regexp";
 
-import { RequestWrapper } from "./Request";
-import { ResponseWrapper } from "./Response";
+import { IncomingMessage } from "./IncomingMessage";
+import { ServerResponse } from "./ServerResponse";
 
 function getUrlParameters (url: string) {
   return (url.match(/:([a-zA-Z0-9\_]+)/gi) || []).map((param) => param.substr(1));
 }
 
-function onAbort(req: RequestWrapper, res: ResponseWrapper) {
+function onAbort(req: IncomingMessage, res: ServerResponse) {
   req.socket.readable = false;
   res.socket.writable = false;
   res.aborted = true;
 }
 
-type RequestHandler = (req: RequestWrapper, res: ResponseWrapper, next?: NextFunction) => void;
+type RequestHandler = (req: IncomingMessage, res: ServerResponse, next?: NextFunction) => void;
 type MiddlewareList = Array<{ regexp?: RegExp, handler: RequestHandler }>;
 
 export type RenderCallback = (e: any, rendered?: string) => void;
 type EngineCallback = (path: string, options: object, callback: RenderCallback) => void;
 
-const rootRegexpPath = pathToRegexp("/", [], { end: false, strict: false });
+// const rootRegexpPath = pathToRegexp("/", [], { end: false, strict: false });
 
 export class Application extends EventEmitter {
-  middlewares: MiddlewareList = [];
+  // middlewares: MiddlewareList = [];
 
   // engines: {[ext: string]: EngineCallback} = {};
   // settings: {[setting: string]: any} = {};
@@ -34,16 +34,110 @@ export class Application extends EventEmitter {
 
   protected listeningSocket: any = undefined;
 
+  protected request = express.request;
+  protected response = express.response;
+
   constructor(protected uWSApp: uWS.TemplatedApp) {
     super();
 
     // Alias app.delete() = app.del()
     uWSApp['delete'] = uWSApp['del'];
 
+    this.init();
+  }
+
+  protected init() {
     // perform original express initialization
     application.init.apply(this, arguments);
 
-    this.bind404fallback();
+    this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
+      const url = uwsRequest.getUrl();
+
+      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
+      const res = new ServerResponse(uwsResponse, req);
+
+      uwsResponse.onAborted(onAbort.bind(this, req, res));
+      // read body data!
+      if (req.headers['content-length']) {
+        try {
+          await req['readBody']();
+        } catch (e) {
+          console.warn("uWebSockets-express: failed reading request body at", url);
+        }
+      }
+
+      this.handle(req, res);
+    });
+
+    // this.uWSApp[method](path, async (res, req) => {
+    //   const url = req.getUrl();
+    //   const request = new RequestWrapper(req, res, url, getUrlParameters(path), this);
+    //   const response = new ServerResponse(res, request);
+
+    //   console.log({ url, method });
+
+    //   res.onAborted(onAbort.bind(this, request, response));
+
+    //   // read body data!
+    //   if (request.headers['content-length']) {
+    //     try {
+    //       await request['readBody']();
+    //     } catch (e) {
+    //       console.warn("uWebSockets-express: failed reading request body at", url);
+    //     }
+    //   }
+
+    //   let currentHandler: number = 0;
+
+    //   const handlers = [...this.middlewares];
+
+    //   // handler may not have been provided (root middleware request)
+    //   if (handler) {
+    //     handlers.push({ handler });
+    //   }
+
+    //   const next = () => {
+    //     // skip if aborted.
+    //     if (response.aborted || response.finished) { return; }
+
+    //     const handler = handlers[currentHandler++];
+    //     console.log("NEXT!", handler, handler?.handler.toString());
+
+    //     // skip if reached the end.
+    //     // force to end the response.
+    //     if (!handler) {
+    //       response.end();
+    //       return;
+    //     }
+
+    //     if (handler.regexp) {
+    //       if (handler.regexp.exec(url)) {
+    //         console.log("execute!");
+    //         handler.handler(request, response, next);
+
+    //       } else {
+    //         console.log("skip; next!");
+    //         next();
+    //       }
+
+    //     } else {
+    //       console.log("execute!");
+    //       handler.handler(request, response, next);
+    //     }
+    //   }
+
+    //   console.log("next!");
+    //   next();
+    // });
+
+  }
+
+  protected handle(req, res, callback?) {
+    (express.application as any).handle.call(this, req, res, callback);
+  }
+
+  protected lazyrouter() {
+    (express.application as any).lazyrouter.apply(this, arguments);
   }
 
   public engine(ext: string, fn: EngineCallback) {
@@ -52,6 +146,7 @@ export class Application extends EventEmitter {
 
   public set(setting, val) {
     application.set.apply(this, arguments);
+    return this;
   }
 
   public enable(setting: string) {
@@ -63,7 +158,7 @@ export class Application extends EventEmitter {
   }
 
   public render(name: string, options: any, callback: RenderCallback) {
-    application.render.apply(this, arguments);
+    return application.render.apply(this, arguments);
   }
 
   public use(handler: RequestHandler)
@@ -73,124 +168,55 @@ export class Application extends EventEmitter {
   public use(path: string, any: any)
   public use(any: any)
   public use(pathOrHandler: string | RequestHandler, ...handlersOrRouters: Array<RequestHandler | express.Router>) {
-    [pathOrHandler, ...handlersOrRouters].forEach((handlerOrRouter) => {
-      if (typeof (pathOrHandler) === "function") {
-        this.middlewares.push({ handler: pathOrHandler });
-
-      } else if ((handlerOrRouter as express.Router)?.stack?.length > 0) {
-        this.convertExpressRouter(pathOrHandler as string, handlerOrRouter as express.Router);
-
-      } else if (typeof (pathOrHandler) === "string" && typeof (handlerOrRouter) === "function") {
-        this.middlewares.push({
-          regexp: pathToRegexp(pathOrHandler, [], { end: false, strict: false }),
-          handler: handlerOrRouter as RequestHandler
-        });
-      }
-    })
-  }
-
-  public any(
-    method: "del" | "put" | "get" | "post" | "patch" | "options" | "head" | "any",
-    path: string,
-    ...handlers: RequestHandler[]
-  ) {
-    // latest handler is the actual route handler
-    const numHandlers = handlers.length;
-    const handler = handlers[numHandlers - 1];
-
-    // previous handlers are middlewares
-    if (numHandlers > 1) {
-      for (let i = 0; i < numHandlers - 1; i++) {
-        this.middlewares.push({
-          regexp: pathToRegexp(path),
-          handler: handlers[i]
-        })
-      }
-    }
-
-    this.uWSApp[method](path, async (res, req) => {
-      const url = req.getUrl();
-      const request = new RequestWrapper(req, res, url, getUrlParameters(path), this);
-      const response = new ResponseWrapper(res, request);
-
-      res.onAborted(onAbort.bind(this, request, response));
-
-      // read body data!
-      if (request.headers['content-length']) {
-        try {
-          await request['readBody']();
-        } catch (e) {
-          console.warn("uWebSockets-express: failed reading request body at", url);
-        }
-      }
-
-      let currentHandler: number = 0;
-
-      const handlers = [...this.middlewares];
-
-      // handler may not have been provided (root middleware request)
-      if (handler) {
-        handlers.push({ handler });
-      }
-
-      const next = () => {
-        // skip if aborted.
-        if (response.aborted) { return; }
-
-        const handler = handlers[currentHandler++];
-
-        // skip if reached the end.
-        // force to end the response.
-        if (!handler) {
-          response.end();
-          return;
-        }
-
-        if (handler.regexp) {
-          if (handler.regexp.exec(url)) {
-            handler.handler(request, response, next);
-
-          } else {
-            next();
-          }
-
-        } else {
-          handler.handler(request, response, next);
-        }
-      }
-
-      next();
-    });
+    express.application.use.apply(this, arguments);
+    return this;
   }
 
   public get(path: string, ...handlers: RequestHandler[]) {
-    // getting a property from "set"
-    if (arguments.length === 1) { return application.set.call(this, path); }
-    return this.any("get", path, ...handlers);
+    express.application.get.apply(this, arguments);
+    return this;
   }
 
   public post(path: string, ...handlers: RequestHandler[]) {
-    return this.any("post", path, ...handlers);
+    express.application.post.apply(this, arguments);
+    return this;
   }
 
   public patch(path: string, ...handlers: RequestHandler[]) {
-    return this.any("patch", path, ...handlers);
+    express.application.patch.apply(this, arguments);
+    return this;
   }
 
   public options(path: string, ...handlers: RequestHandler[]) {
-    return this.any("options", path, ...handlers);
+    express.application.options.apply(this, arguments);
+    return this;
   }
 
   public put(path: string, ...handlers: RequestHandler[]) {
-    return this.any("put", path, ...handlers);
+    express.application.put.apply(this, arguments);
+    return this;
   }
 
+  /**
+   * @deprecated
+   */
   public del(path: string, ...handlers: RequestHandler[]) {
-    return this.any("del", path, ...handlers);
+    return this.delete.apply(this, arguments);
+  }
+
+  public delete(path: string, ...handlers: RequestHandler[]) {
+    express.application.delete.apply(this, arguments);
+    return this;
   }
 
   public head(path: string, ...handlers: RequestHandler[]) {
-    return this.any("head", path, ...handlers);
+    express.application.head.apply(this, arguments);
+    return this;
+  }
+
+  public all(path: string, ...handlers: RequestHandler[]) {
+    express.application.all.apply(this, arguments);
+    return this;
   }
 
   public listen(port?: number, cb?: () => void) {
@@ -208,83 +234,83 @@ export class Application extends EventEmitter {
     };
   }
 
-  protected convertExpressRouter (baseUrl: string, router: express.Router) {
-    const localMiddlewares: MiddlewareList = [];
-    const routesBound = new Set<RegExp>();
+  // protected convertExpressRouter (baseUrl: string, router: express.Router) {
+  //   const localMiddlewares: MiddlewareList = [];
+  //   const routesBound = new Set<RegExp>();
 
-    // add route middleware to change `baseUrl` of request
-    const basePathRegexp = pathToRegexp(baseUrl, [], { end: false, strict: false });
-    localMiddlewares.push({
-      regexp: basePathRegexp,
-      handler: (req, res, next) => {
-        req.baseUrl = baseUrl;
-        next();
-      }
-    });
+  //   // add route middleware to change `baseUrl` of request
+  //   const basePathRegexp = pathToRegexp(baseUrl, [], { end: false, strict: false });
+  //   localMiddlewares.push({
+  //     regexp: basePathRegexp,
+  //     handler: (req, res, next) => {
+  //       req.baseUrl = baseUrl;
+  //       next();
+  //     }
+  //   });
 
-    router.stack.forEach((layer, i) => {
-      if (!layer.route) {
-        if (layer.name === "router") {
-          // nested route!
-          let childPath = baseUrl;
+  //   router.stack.forEach((layer, i) => {
+  //     if (!layer.route) {
+  //       if (layer.name === "router") {
+  //         // nested route!
+  //         let childPath = baseUrl;
 
-          const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
-          if (matches && matches[1]) {
-            childPath += `/${matches[1]}`;
-          }
+  //         const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
+  //         if (matches && matches[1]) {
+  //           childPath += `/${matches[1]}`;
+  //         }
 
-          this.convertExpressRouter(childPath, layer.handle);
+  //         this.convertExpressRouter(childPath, layer.handle);
 
-        } else {
-          // FIXME:
-          // layer.regexp may conflict with other registered paths outside this router.
-          // (resulting in the middleware being called in routes that it shouldn't)
+  //       } else {
+  //         // FIXME:
+  //         // layer.regexp may conflict with other registered paths outside this router.
+  //         // (resulting in the middleware being called in routes that it shouldn't)
 
-          // avoid conflict for "/" path. Use base route regexp instead.
-          const regexp = (rootRegexpPath.toString() === layer.regexp.toString())
-            ? basePathRegexp
-            : layer.regexp
+  //         // avoid conflict for "/" path. Use base route regexp instead.
+  //         const regexp = (rootRegexpPath.toString() === layer.regexp.toString())
+  //           ? basePathRegexp
+  //           : layer.regexp
 
-          // middleware
-          localMiddlewares.push({ regexp, handler: layer.handle, });
-        }
+  //         // middleware
+  //         localMiddlewares.push({ regexp, handler: layer.handle, });
+  //       }
 
-      } else {
-        let path: string = layer.route.path;
-        const stack = layer.route.stack;
-        const method = stack[0].method;
-        // const handle = stack[0].handle;
+  //     } else {
+  //       let path: string = layer.route.path;
+  //       const stack = layer.route.stack;
+  //       const method = stack[0].method;
+  //       // const handle = stack[0].handle;
 
-        this.any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
+  //       this.any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
 
-        //
-        // WORKAROUND: bind routes ending with / twice,
-        // this allows to respond to "/path" AND "/path/"
-        //
-        if (path.lastIndexOf("/") === path.length - 1) {
-          path = path.substr(0, path.length - 1);
-          this.any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
-        }
+  //       //
+  //       // WORKAROUND: bind routes ending with / twice,
+  //       // this allows to respond to "/path" AND "/path/"
+  //       //
+  //       if (path.lastIndexOf("/") === path.length - 1) {
+  //         path = path.substr(0, path.length - 1);
+  //         this.any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
+  //       }
 
-        routesBound.add(layer.regexp);
-      }
-    });
+  //       routesBound.add(layer.regexp);
+  //     }
+  //   });
 
-    localMiddlewares.forEach((mid) => {
-      if (!routesBound.has(mid.regexp)) {
-        this.any("any", `${baseUrl}/*`);
-      }
-    });
+  //   localMiddlewares.forEach((mid) => {
+  //     if (!routesBound.has(mid.regexp)) {
+  //       this.any("any", `${baseUrl}/*`);
+  //     }
+  //   });
 
-    this.middlewares.push(...localMiddlewares);
-  }
+  //   this.middlewares.push(...localMiddlewares);
+  // }
 
-  protected bind404fallback() {
-    // fallback route to mimic express behaviour.
-    this.any("any", "/*", (req, res) => {
-      res.status(404).end(`Cannot ${req.method} ${req.path}`);
-    });
-  }
+  // protected bind404fallback() {
+  //   // fallback route to mimic express behaviour.
+  //   this.any("any", "/*", (req, res) => {
+  //     res.status(404).end(`Cannot ${req.method} ${req.path}`);
+  //   });
+  // }
 
   protected defaultConfiguration() {
     application.defaultConfiguration.apply(this);

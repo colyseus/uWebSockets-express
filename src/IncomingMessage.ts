@@ -8,7 +8,7 @@ import { request } from "express";
 
 const READ_BODY_MAX_TIME = 500;
 
-export class RequestWrapper extends EventEmitter {
+export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
   // private _url: string;
   // private _path: string;
   private _baseUrl: string = "";
@@ -20,8 +20,13 @@ export class RequestWrapper extends EventEmitter {
   private _bodydata: any;
   private _rawbody: any;
   private _remoteAddress: ArrayBuffer;
+  private _readableState = { pipes: [] };
+
+  private _originalUrl: string = "";
 
   public aborted: boolean;
+
+  // @ts-ignore
   public socket = new Socket(false, true);
 
   #_originalUrlParsed: URL;
@@ -29,7 +34,6 @@ export class RequestWrapper extends EventEmitter {
   constructor(
     private req: uWS.HttpRequest,
     private res: uWS.HttpResponse,
-    private _originalUrl: string,
     private parameterNames: string[],
     private app: any,
   ) {
@@ -49,14 +53,14 @@ export class RequestWrapper extends EventEmitter {
     this._rawquery = this.req.getQuery();
     this._remoteAddress = this.res.getRemoteAddressAsText();
 
-    // ensure originalUrl has at least "/".
-    if (!this._originalUrl) { this._originalUrl = "/"; }
+    // // ensure originalUrl has at least "/".
+    // if (!this._originalUrl) { this._originalUrl = "/"; }
 
     this.#_originalUrlParsed = new URL(`http://server${this._originalUrl}`);
 
-    if (this._rawquery) {
-      this._originalUrl += `?${this._rawquery}`;
-    }
+    // if (this._rawquery) {
+    //   this._originalUrl += `?${this._rawquery}`;
+    // }
   }
 
   get ip () {
@@ -73,6 +77,11 @@ export class RequestWrapper extends EventEmitter {
 
   get headers (): http.IncomingHttpHeaders {
     return this._headers;
+  }
+
+  set params (value) {
+    console.log("SET params:", { value });
+    this._params = value;
   }
 
   get params(): { [name: string]: string } {
@@ -102,6 +111,11 @@ export class RequestWrapper extends EventEmitter {
     this._baseUrl = url;
   }
 
+  set originalUrl(value) {
+    console.log("SET originalUrl:", { value });
+    this._originalUrl = value;
+  }
+
   get originalUrl () {
     return this._originalUrl;
   }
@@ -120,6 +134,39 @@ export class RequestWrapper extends EventEmitter {
       : path;
   }
 
+  // unpipe() {
+  //   const state = this._readableState;
+  // const unpipeInfo = { hasUnpiped: false };
+
+  // // If we're not piping anywhere, then do nothing.
+  // if (state.pipes.length === 0)
+  //   return this;
+
+  // if (!dest) {
+  //   // remove all.
+  //   const dests = state.pipes;
+  //   state.pipes = [];
+  //   this.pause();
+
+  //   for (let i = 0; i < dests.length; i++)
+  //     dests[i].emit('unpipe', this, { hasUnpiped: false });
+  //   return this;
+  // }
+
+  // // Try to find the right one.
+  // const index = ArrayPrototypeIndexOf(state.pipes, dest);
+  // if (index === -1)
+  //   return this;
+
+  // state.pipes.splice(index, 1);
+  // if (state.pipes.length === 0)
+  //   this.pause();
+
+  // dest.emit('unpipe', this, unpipeInfo);
+
+  // return this;
+  // }
+
   get(name: string) {
     return this.header(name);
   }
@@ -132,6 +179,8 @@ export class RequestWrapper extends EventEmitter {
   accepts(...args: any[]): string | false {
     return request.accepts.apply(this, arguments);
   }
+
+  resume() { return this; }
 
   on(event: string | symbol, listener: (...args: any[]) => void) {
     if (event === 'data' && this._rawbody !== undefined) {

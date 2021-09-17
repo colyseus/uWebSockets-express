@@ -4,10 +4,10 @@ import EventEmitter from "events";
 import uWS, { RecognizedString } from "uWebSockets.js";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Socket } from "./Socket";
-import type { Application, RenderCallback } from "./Application";
 import { response } from "express";
+import http from "http";
 
-export class ResponseWrapper extends EventEmitter {
+export class ServerResponse extends EventEmitter {
   private _headers: { [name: string]: string | string[] } = {};
   private _writes: any[] = [];
 
@@ -23,6 +23,7 @@ export class ResponseWrapper extends EventEmitter {
     private req: any,
   ) {
     super();
+    http.OutgoingMessage.call(this);
   }
 
   render(view: string, options?: any, callback?: (err: Error, html: string) => void): void

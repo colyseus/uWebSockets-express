@@ -7,4 +7,6 @@ export class Socket extends EventEmitter {
   ) {
     super();
   }
+
+  destroy() {}
 }

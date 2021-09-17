@@ -575,6 +575,39 @@ describe("uWS Express API Compatibility", () => {
       }).end(JSON.stringify(data));
     });
 
+    it("should reach final route", (done) => {
+      app.use(cors());
+      app.use(express.json());
+
+      app.get('/metrics', async (req, res) => res.send("/metrics"));
+      app.get('/metrics/ccu', async (req, res) => res.send("/metrics/ccu"));
+
+      const router = express.Router();
+      router.get("/", (req, res) => res.send("OK"));
+      router.get("/room", (req, res) => res.send("room"));
+      router.get("/room/call", (req, res) => res.send("room/call"));
+
+      const root = express.Router();
+      root.use(express.static(path.resolve(__dirname, "static")));
+      root.use("/api", router);
+
+      app.use('/colyseus', root);
+
+      const opts = url.parse(`${URL}/colyseus/api`)
+      // @ts-ignore
+      opts.method = "GET";
+
+      rawHttp.request(opts, function (res) {
+        res.on("data", (chunk) => {
+          console.log(chunk.toString());
+          assert.strictEqual('OK', chunk.toString());
+          done();
+        });
+        res.read();
+      }).end();
+
+    });
+
   });
 
 });

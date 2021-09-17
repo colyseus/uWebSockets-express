@@ -134,39 +134,6 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
       : path;
   }
 
-  // unpipe() {
-  //   const state = this._readableState;
-  // const unpipeInfo = { hasUnpiped: false };
-
-  // // If we're not piping anywhere, then do nothing.
-  // if (state.pipes.length === 0)
-  //   return this;
-
-  // if (!dest) {
-  //   // remove all.
-  //   const dests = state.pipes;
-  //   state.pipes = [];
-  //   this.pause();
-
-  //   for (let i = 0; i < dests.length; i++)
-  //     dests[i].emit('unpipe', this, { hasUnpiped: false });
-  //   return this;
-  // }
-
-  // // Try to find the right one.
-  // const index = ArrayPrototypeIndexOf(state.pipes, dest);
-  // if (index === -1)
-  //   return this;
-
-  // state.pipes.splice(index, 1);
-  // if (state.pipes.length === 0)
-  //   this.pause();
-
-  // dest.emit('unpipe', this, unpipeInfo);
-
-  // return this;
-  // }
-
   get(name: string) {
     return this.header(name);
   }

@@ -115,7 +115,7 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
     });
   }
 
-  send(chunk: RecognizedString) {
+  send(chunk?: RecognizedString) {
     switch (typeof chunk) {
       // string defaulting to html
       case 'string':

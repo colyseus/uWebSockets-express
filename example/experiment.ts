@@ -30,6 +30,10 @@ app.get('/', (req, res) => {
   res.send("It's time to kick ass and chew bubblegum!");
 });
 
+app.get('/test', (_req, res) => {
+  return res.status(401).send();
+})
+
 app.use('/colyseus', root);
 
 app.listen(8080);

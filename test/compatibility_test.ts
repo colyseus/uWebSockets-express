@@ -31,11 +31,11 @@ describe("uWS Express API Compatibility", () => {
     it("respond to fallback route", async () => {
       const response = await http.get(`${URL}/not_found`, { validateStatus: null });
       assert.strictEqual(StatusCodes.NOT_FOUND, response.status);
-      assert.strictEqual("Cannot GET /not_found", response.data);
+      assert.ok(response.data.includes("Cannot GET /not_found"));
 
       const response2 = await http.post(`${URL}/not_found2`, {}, { validateStatus: null });
       assert.strictEqual(StatusCodes.NOT_FOUND, response2.status);
-      assert.strictEqual("Cannot POST /not_found2", response2.data);
+      assert.ok(response2.data.includes("Cannot POST /not_found2"));
     });
 
     it("status()", async () => {

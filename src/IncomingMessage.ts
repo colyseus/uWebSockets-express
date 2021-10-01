@@ -10,7 +10,7 @@ const READ_BODY_MAX_TIME = 500;
 
 export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
   public url: string;
-  public path: string;
+  public method: string;
 
   // public query: querystring.ParsedUrlQuery;
 
@@ -19,7 +19,6 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   private _baseUrl: string = "";
   private _rawquery: string;
   private _query: querystring.ParsedUrlQuery;
-  private _method: string;
   private _headers: http.IncomingHttpHeaders = {};
   private _params: {[name: string]: string};
   private _bodydata: any;
@@ -32,7 +31,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   // @ts-ignore
   public socket = new Socket(false, true);
 
-  // #_originalUrlParsed: URL;
+  #_originalUrlParsed: URL;
 
   constructor(
     private req: uWS.HttpRequest,
@@ -53,20 +52,16 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     });
 
     this.url = this.req.getUrl();
-    // this._originalUrl = this.req.getUrl();
+    this.method = this.req.getMethod().toUpperCase();
 
-    this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
     this._remoteAddress = this.res.getRemoteAddressAsText();
 
-    // // ensure originalUrl has at least "/".
-    // if (!this._originalUrl) { this._originalUrl = "/"; }
+    if (this._rawquery) {
+      this.url += `?${this._rawquery}`;
+    }
 
-    // this.#_originalUrlParsed = new URL(`http://server${this._originalUrl}`);
-
-    // if (this._rawquery) {
-    //   this._originalUrl += `?${this._rawquery}`;
-    // }
+    this.#_originalUrlParsed = new URL(`http://server${this.url}`);
   }
 
   get ip () {
@@ -101,8 +96,6 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     return this._params;
   }
 
-  get method(): string { return this._method; }
-
   get query (): querystring.ParsedUrlQuery {
     if(!this._query) this._query = querystring.parse(this._rawquery);
     return this._query;
@@ -112,16 +105,16 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     return this._baseUrl;
   }
 
-  set baseUrl(url) {
-    this._baseUrl = url;
+  set baseUrl(baseUrl) {
+    this._baseUrl = baseUrl;
   }
 
-  // get path(): string {
-  //   const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
-  //   return (!path.startsWith("/"))
-  //     ? `/${path}`
-  //     : path;
-  // }
+  get path(): string {
+    const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
+    return (!path.startsWith("/"))
+      ? `/${path}`
+      : path;
+  }
 
   get(name: string) {
     return this.header(name);

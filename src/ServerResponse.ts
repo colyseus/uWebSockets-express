@@ -7,20 +7,23 @@ import { Socket } from "./Socket";
 import { response } from "express";
 import http from "http";
 
-export class ServerResponse extends EventEmitter {
+export class ServerResponse extends EventEmitter /* implements http.ServerResponse */ {
   private _headers: { [name: string]: string | string[] } = {};
   private _writes: any[] = [];
 
   public statusCode: number = 200;
-  public socket = new Socket(true, false);
+  // public socket = new Socket(true, false);
   public headersSent: boolean = false;
   public finished: boolean = false;
   public aborted: boolean;
   public locals: any = {};
 
+  public writableEnded = false;
+
   constructor(
     private res: uWS.HttpResponse,
     private req: any,
+    private app: any,
   ) {
     super();
     http.OutgoingMessage.call(this);
@@ -37,7 +40,7 @@ export class ServerResponse extends EventEmitter {
     let body = chunk;
     if (encoding) { body = Buffer.from(chunk, encoding).toString(); }
 
-    if (this.socket.writable) {
+    if (!this.writableEnded) {
       // write status + headers
       this.writeHead(this.statusCode || this.statusCode, this._headers);
 
@@ -48,7 +51,7 @@ export class ServerResponse extends EventEmitter {
       this.res.end(body);
     }
 
-    this.socket.writable = false;
+    // this.writableEnded = true;
 
     this.finished = true;
     this.emit('finish');

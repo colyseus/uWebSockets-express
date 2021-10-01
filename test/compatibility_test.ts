@@ -94,7 +94,7 @@ describe("uWS Express API Compatibility", () => {
       });
 
       const response = await http.get(`${URL}/redirect`);
-      console.log(response);
+      // console.log(response);
       assert.strictEqual("final", response.data);
     });
 
@@ -599,7 +599,7 @@ describe("uWS Express API Compatibility", () => {
 
       rawHttp.request(opts, function (res) {
         res.on("data", (chunk) => {
-          console.log(chunk.toString());
+          // console.log(chunk.toString());
           assert.strictEqual('OK', chunk.toString());
           done();
         });

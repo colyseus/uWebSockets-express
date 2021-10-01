@@ -13,7 +13,7 @@ function getUrlParameters (url: string) {
 
 function onAbort(req: IncomingMessage, res: ServerResponse) {
   req.socket.readable = false;
-  res.socket.writable = false;
+  res.finished = true;
   res.aborted = true;
 }
 
@@ -37,6 +37,8 @@ export class Application extends EventEmitter {
   protected request = express.request;
   protected response = express.response;
 
+  private _router: any;
+
   constructor(protected uWSApp: uWS.TemplatedApp) {
     super();
 
@@ -54,9 +56,10 @@ export class Application extends EventEmitter {
       const url = uwsRequest.getUrl();
 
       const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
-      const res = new ServerResponse(uwsResponse, req);
+      const res = new ServerResponse(uwsResponse, req, this);
 
-      uwsResponse.onAborted(onAbort.bind(this, req, res));
+      uwsResponse.onAborted(onAbort.bind(undefined, req, res));
+
       // read body data!
       if (req.headers['content-length']) {
         try {
@@ -68,68 +71,6 @@ export class Application extends EventEmitter {
 
       this.handle(req, res);
     });
-
-    // this.uWSApp[method](path, async (res, req) => {
-    //   const url = req.getUrl();
-    //   const request = new RequestWrapper(req, res, url, getUrlParameters(path), this);
-    //   const response = new ServerResponse(res, request);
-
-    //   console.log({ url, method });
-
-    //   res.onAborted(onAbort.bind(this, request, response));
-
-    //   // read body data!
-    //   if (request.headers['content-length']) {
-    //     try {
-    //       await request['readBody']();
-    //     } catch (e) {
-    //       console.warn("uWebSockets-express: failed reading request body at", url);
-    //     }
-    //   }
-
-    //   let currentHandler: number = 0;
-
-    //   const handlers = [...this.middlewares];
-
-    //   // handler may not have been provided (root middleware request)
-    //   if (handler) {
-    //     handlers.push({ handler });
-    //   }
-
-    //   const next = () => {
-    //     // skip if aborted.
-    //     if (response.aborted || response.finished) { return; }
-
-    //     const handler = handlers[currentHandler++];
-    //     console.log("NEXT!", handler, handler?.handler.toString());
-
-    //     // skip if reached the end.
-    //     // force to end the response.
-    //     if (!handler) {
-    //       response.end();
-    //       return;
-    //     }
-
-    //     if (handler.regexp) {
-    //       if (handler.regexp.exec(url)) {
-    //         console.log("execute!");
-    //         handler.handler(request, response, next);
-
-    //       } else {
-    //         console.log("skip; next!");
-    //         next();
-    //       }
-
-    //     } else {
-    //       console.log("execute!");
-    //       handler.handler(request, response, next);
-    //     }
-    //   }
-
-    //   console.log("next!");
-    //   next();
-    // });
-
   }
 
   protected handle(req, res, callback?) {
@@ -137,7 +78,35 @@ export class Application extends EventEmitter {
   }
 
   protected lazyrouter() {
-    (express.application as any).lazyrouter.apply(this, arguments);
+    // DISCARDED: original lazyrouter auto-initializes "expressInit", which
+    // overrides the prototype of request/response, which we can't let happen
+    // (express.application as any).lazyrouter.apply(this, arguments);
+
+    if (!this._router) {
+      this._router = express.Router({
+        caseSensitive: this.enabled('case sensitive routing'),
+        strict: this.enabled('strict routing')
+      });
+
+      this._router.use(express.query(this.get('query parser fn')));
+
+      const app = this;
+      this._router.use(function expressInit(req, res, next) {
+        if (app.enabled('x-powered-by')) res.setHeader('X-Powered-By', 'Express');
+        req.res = res;
+        res.req = req;
+        req.next = next;
+
+        // setPrototypeOf(req, app.request)
+        // setPrototypeOf(res, app.response)
+
+        res.locals = res.locals || Object.create(null);
+
+        next();
+      });
+    }
+
+    return ;
   }
 
   public engine(ext: string, fn: EngineCallback) {
@@ -173,8 +142,7 @@ export class Application extends EventEmitter {
   }
 
   public get(path: string, ...handlers: RequestHandler[]) {
-    express.application.get.apply(this, arguments);
-    return this;
+    return express.application.get.apply(this, arguments);
   }
 
   public post(path: string, ...handlers: RequestHandler[]) {

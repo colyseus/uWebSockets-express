@@ -9,6 +9,11 @@ import { request } from "express";
 const READ_BODY_MAX_TIME = 500;
 
 export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
+  public url: string;
+  public path: string;
+
+  // public query: querystring.ParsedUrlQuery;
+
   // private _url: string;
   // private _path: string;
   private _baseUrl: string = "";
@@ -22,14 +27,12 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   private _remoteAddress: ArrayBuffer;
   private _readableState = { pipes: [] };
 
-  private _originalUrl: string = "";
-
   public aborted: boolean;
 
   // @ts-ignore
   public socket = new Socket(false, true);
 
-  #_originalUrlParsed: URL;
+  // #_originalUrlParsed: URL;
 
   constructor(
     private req: uWS.HttpRequest,
@@ -49,6 +52,9 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
       }
     });
 
+    this.url = this.req.getUrl();
+    // this._originalUrl = this.req.getUrl();
+
     this._method = this.req.getMethod().toUpperCase();
     this._rawquery = this.req.getQuery();
     this._remoteAddress = this.res.getRemoteAddressAsText();
@@ -56,7 +62,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     // // ensure originalUrl has at least "/".
     // if (!this._originalUrl) { this._originalUrl = "/"; }
 
-    this.#_originalUrlParsed = new URL(`http://server${this._originalUrl}`);
+    // this.#_originalUrlParsed = new URL(`http://server${this._originalUrl}`);
 
     // if (this._rawquery) {
     //   this._originalUrl += `?${this._rawquery}`;
@@ -80,7 +86,6 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   }
 
   set params (value) {
-    console.log("SET params:", { value });
     this._params = value;
   }
 
@@ -111,28 +116,12 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     this._baseUrl = url;
   }
 
-  set originalUrl(value) {
-    console.log("SET originalUrl:", { value });
-    this._originalUrl = value;
-  }
-
-  get originalUrl () {
-    return this._originalUrl;
-  }
-
-  get url () {
-    const url = this._originalUrl.replace(this._baseUrl, "");
-    return (!url.startsWith("/"))
-      ? `/${url}`
-      : url;
-  }
-
-  get path(): string {
-    const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
-    return (!path.startsWith("/"))
-      ? `/${path}`
-      : path;
-  }
+  // get path(): string {
+  //   const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
+  //   return (!path.startsWith("/"))
+  //     ? `/${path}`
+  //     : path;
+  // }
 
   get(name: string) {
     return this.header(name);

@@ -114,8 +114,7 @@ export class Application extends EventEmitter {
   }
 
   public set(setting, val) {
-    application.set.apply(this, arguments);
-    return this;
+    return application.set.apply(this, arguments);
   }
 
   public enable(setting: string) {
@@ -201,84 +200,6 @@ export class Application extends EventEmitter {
       }
     };
   }
-
-  // protected convertExpressRouter (baseUrl: string, router: express.Router) {
-  //   const localMiddlewares: MiddlewareList = [];
-  //   const routesBound = new Set<RegExp>();
-
-  //   // add route middleware to change `baseUrl` of request
-  //   const basePathRegexp = pathToRegexp(baseUrl, [], { end: false, strict: false });
-  //   localMiddlewares.push({
-  //     regexp: basePathRegexp,
-  //     handler: (req, res, next) => {
-  //       req.baseUrl = baseUrl;
-  //       next();
-  //     }
-  //   });
-
-  //   router.stack.forEach((layer, i) => {
-  //     if (!layer.route) {
-  //       if (layer.name === "router") {
-  //         // nested route!
-  //         let childPath = baseUrl;
-
-  //         const matches = layer.regexp.toString().match(/\/([a-zA-Z_\-0-9]+)\\\//i);
-  //         if (matches && matches[1]) {
-  //           childPath += `/${matches[1]}`;
-  //         }
-
-  //         this.convertExpressRouter(childPath, layer.handle);
-
-  //       } else {
-  //         // FIXME:
-  //         // layer.regexp may conflict with other registered paths outside this router.
-  //         // (resulting in the middleware being called in routes that it shouldn't)
-
-  //         // avoid conflict for "/" path. Use base route regexp instead.
-  //         const regexp = (rootRegexpPath.toString() === layer.regexp.toString())
-  //           ? basePathRegexp
-  //           : layer.regexp
-
-  //         // middleware
-  //         localMiddlewares.push({ regexp, handler: layer.handle, });
-  //       }
-
-  //     } else {
-  //       let path: string = layer.route.path;
-  //       const stack = layer.route.stack;
-  //       const method = stack[0].method;
-  //       // const handle = stack[0].handle;
-
-  //       this.any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
-
-  //       //
-  //       // WORKAROUND: bind routes ending with / twice,
-  //       // this allows to respond to "/path" AND "/path/"
-  //       //
-  //       if (path.lastIndexOf("/") === path.length - 1) {
-  //         path = path.substr(0, path.length - 1);
-  //         this.any(method, `${baseUrl}${path}`, ...stack.map((s) => s.handle));
-  //       }
-
-  //       routesBound.add(layer.regexp);
-  //     }
-  //   });
-
-  //   localMiddlewares.forEach((mid) => {
-  //     if (!routesBound.has(mid.regexp)) {
-  //       this.any("any", `${baseUrl}/*`);
-  //     }
-  //   });
-
-  //   this.middlewares.push(...localMiddlewares);
-  // }
-
-  // protected bind404fallback() {
-  //   // fallback route to mimic express behaviour.
-  //   this.any("any", "/*", (req, res) => {
-  //     res.status(404).end(`Cannot ${req.method} ${req.path}`);
-  //   });
-  // }
 
   protected defaultConfiguration() {
     application.defaultConfiguration.apply(this);

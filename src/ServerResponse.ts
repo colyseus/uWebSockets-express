@@ -106,11 +106,7 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
   sendFile(path: string, fn?: (err: Error) => void): void {
     this.type(path);
     fs.readFile(path, (err, contents) => {
-      if (err) {
-        return fn(err);
-      } else {
-        console.error(err);
-      }
+      if (err) return fn(err);
       this.send(contents);
     });
   }

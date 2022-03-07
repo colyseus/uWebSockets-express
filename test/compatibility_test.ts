@@ -266,6 +266,22 @@ describe("uWS Express API Compatibility", () => {
 
       assert.ok(true, "should not have throw an exception");
     });
+
+    it("asynchronously getting header while aborted", async () => {
+      app.get("/async_header/:one/:two", async (req, res) => {
+        await timers.setTimeout(200);
+        const existing = req.header("existing");
+        const nonexisting = req.header("non-existing");
+        const useragent = req.header("user-agent");
+        res.json({ existing, nonexisting, useragent });
+      });
+
+      assert.deepStrictEqual({
+        existing: "one",
+        useragent: "axios/0.21.1",
+      }, (await http.get(`${URL}/async_header/param1/param2`, { headers: { existing: "one" } })).data)
+    });
+
   });
 
   describe("express.Router compatibility", () => {

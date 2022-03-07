@@ -122,7 +122,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
 
   header(name: string) {
     name = name.toLowerCase();
-    return this._headers[name] || this.req.getHeader(name);
+    return this._headers[name] || undefined;
   }
 
   accepts(...args: any[]): string | false {

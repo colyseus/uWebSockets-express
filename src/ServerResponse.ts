@@ -275,6 +275,13 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
 
   }
 
+  clearCookie(name: string, options: Record<string, string | number>) {
+
+    const opts = merge({ expires: new Date(1), path: '/' }, options);
+    return this.cookie(name, '', opts);
+
+  }
+
   // express-session [??]
   private _implicitHeader () {
     const code = StatusCodes.OK;

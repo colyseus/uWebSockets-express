@@ -109,6 +109,28 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual("hello, world", response['my-cookie']);
     })
 
+    it("cookie()", async () => {
+      app.get("/cookie", (req, res) => {
+        res.cookie("my-cookie", "hello world", {});
+        res.end();
+      });
+
+      const response = (await http.get(`${URL}/cookie`)).headers;
+      assert.strictEqual(1, response['set-cookie'].length);
+      assert.match(response["set-cookie"][0], /^\s?my-cookie/);
+    })
+
+    it("clearCookie()", async () => {
+      app.get("/clearcookie", (req, res) => {
+        res.clearCookie("my-cookie", {});
+        res.end();
+      });
+
+      const response = (await http.get(`${URL}/clearcookie`)).headers;
+      assert.strictEqual(1, response['set-cookie'].length);
+      assert.match(response["set-cookie"][0], /^\s?my-cookie=\;/);
+    })
+
     it("render()", async () => {
       app.set('views', path.join(__dirname, 'views'));
       app.set('view engine', 'html');

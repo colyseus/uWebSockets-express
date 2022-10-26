@@ -32,6 +32,8 @@ app.listen(8000);
   - ✅ res.headersSent
   - ✅ res.locals
   - ✅ res.append()
+  - ✅ res.clearCookie()
+  - ✅ res.cookie()
   - ✅ res.end()
   - ✅ res.get()
   - ✅ res.json()
@@ -48,8 +50,6 @@ app.listen(8000);
   - ✅ res.vary()
   - ❌ res.app
   - ❌ res.attachment()
-  - ❌ res.cookie()
-  - ❌ res.clearCookie()
   - ❌ res.download()
   - ❌ res.format()
   - ❌ res.links()

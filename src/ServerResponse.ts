@@ -4,8 +4,11 @@ import EventEmitter from "events";
 import uWS, { RecognizedString } from "uWebSockets.js";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { Socket } from "./Socket";
-import { response } from "express";
+import { response, CookieOptions } from "express";
 import http from "http";
+import merge from "utils-merge";
+import cookie from "cookie";
+import { sign } from 'cookie-signature';
 
 export class ServerResponse extends EventEmitter /* implements http.ServerResponse */ {
   private _headers: { [name: string]: string | string[] } = {};
@@ -239,6 +242,37 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
     }
 
     this.headersSent = true;
+  }
+
+  cookie(name: string, value: string | Record<string, unknown>, options: CookieOptions) {
+
+    const opts = merge({}, options) as CookieOptions;
+    const secret = this.req.secret || null;
+    const signed = opts.signed || false;
+
+    if (signed && !secret) {
+      throw new Error('cookieParser("secret") required for signed cookies');
+    }
+
+    let val = typeof value === 'object'
+      ? 'j:' + JSON.stringify(value)
+      : String(value);
+
+    if (signed) {
+      val = 's:' + sign(val, secret);
+    }
+
+    if ('maxAge' in opts) {
+      opts.expires = new Date(Date.now() + opts.maxAge);
+      opts.maxAge /= 1000;
+    }
+
+    if (opts.path == null) {
+      opts.path = '/';
+    }
+
+    return this.append('Set-Cookie', cookie.serialize(name, String(val), opts));
+
   }
 
   // express-session [??]

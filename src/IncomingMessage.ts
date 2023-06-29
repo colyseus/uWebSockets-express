@@ -10,6 +10,7 @@ const READ_BODY_MAX_TIME = 500;
 
 export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
   public url: string;
+  public originalUrl: string; // used by express router
   public method: string;
 
   // public query: querystring.ParsedUrlQuery;

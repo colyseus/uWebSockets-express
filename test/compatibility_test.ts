@@ -300,7 +300,7 @@ describe("uWS Express API Compatibility", () => {
 
       assert.deepStrictEqual({
         existing: "one",
-        useragent: "axios/0.21.1",
+        useragent: "axios/1.4.0",
       }, (await http.get(`${URL}/async_header/param1/param2`, { headers: { existing: "one" } })).data)
     });
 

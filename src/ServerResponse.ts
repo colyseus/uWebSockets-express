@@ -51,7 +51,9 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
       this._writes.forEach((chunk) => this.res.write(chunk));
 
       // write response
-      this.res.end(body);
+      this.res.cork(() => {
+        this.res.end(body);
+      });
     }
 
     // this.writableEnded = true;
@@ -228,18 +230,20 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
 
     // write status
     const reason = ReasonPhrases[StatusCodes[code]];
-    this.res.writeStatus(`${code} ${reason}`);
+    this.res.cork(() => {
+      this.res.writeStatus(`${code} ${reason}`);
 
-    // write headers
-    for (const name in headers) {
-      if(Array.isArray(headers[name])) {
-        for(const headerValue of headers[name]) {
-          this.res.writeHeader(name, headerValue?.toString());
+      // write headers
+      for (const name in headers) {
+        if(Array.isArray(headers[name])) {
+          for(const headerValue of headers[name]) {
+            this.res.writeHeader(name, headerValue?.toString());
+          }
+        } else {
+          this.res.writeHeader(name, headers[name]?.toString());
         }
-      } else {
-        this.res.writeHeader(name, headers[name]?.toString());
       }
-    }
+    });
 
     this.headersSent = true;
   }
@@ -286,6 +290,8 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
   private _implicitHeader () {
     const code = StatusCodes.OK;
     const reason = ReasonPhrases[StatusCodes[code]];
-    this.res.writeStatus(`${code} ${reason}`);
+    this.res.cork(() => {
+      this.res.writeStatus(`${code} ${reason}`);
+    });
   }
 }

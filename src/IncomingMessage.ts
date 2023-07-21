@@ -167,7 +167,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
 
       this.res.onData((arrayBuffer, isLast) => {
         const chunk = Buffer.from(arrayBuffer);
-        body = (body && body.length !== 0) ? Buffer.concat([body, chunk]) : chunk;
+        body = (body && body.length !== 0) ? Buffer.concat([body, chunk]) : Buffer.concat([chunk]);
 
         if (isLast) {
           clearTimeout(rejectionTimeout);

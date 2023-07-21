@@ -36,7 +36,7 @@ jobs:
       if: steps.check.outputs.changed == 'true'
       run: npm publish
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
     - name: Release
       if: steps.check.outputs.changed == 'true'

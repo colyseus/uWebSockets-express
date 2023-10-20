@@ -7,10 +7,8 @@ import express, { NextFunction, application } from "express";
 import { IncomingMessage } from "./IncomingMessage";
 import { ServerResponse } from "./ServerResponse";
 
-function getUrlParameters(url: string) {
-  return (url.match(/:([a-zA-Z0-9\_]+)/gi) || []).map((param) =>
-    param.substr(1)
-  );
+function getUrlParameters (url: string) {
+  return (url.match(/:([a-zA-Z0-9\_]+)/gi) || []).map((param) => param.substr(1));
 }
 
 function onAbort(req: IncomingMessage, res: ServerResponse) {
@@ -19,19 +17,11 @@ function onAbort(req: IncomingMessage, res: ServerResponse) {
   res.aborted = true;
 }
 
-type RequestHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next?: NextFunction
-) => void;
-type MiddlewareList = Array<{ regexp?: RegExp; handler: RequestHandler }>;
+type RequestHandler = (req: IncomingMessage, res: ServerResponse, next?: NextFunction) => void;
+type MiddlewareList = Array<{ regexp?: RegExp, handler: RequestHandler }>;
 
 export type RenderCallback = (e: any, rendered?: string) => void;
-type EngineCallback = (
-  path: string,
-  options: object,
-  callback: RenderCallback
-) => void;
+type EngineCallback = (path: string, options: object, callback: RenderCallback) => void;
 
 // const rootRegexpPath = pathToRegexp("/", [], { end: false, strict: false });
 
@@ -50,14 +40,11 @@ export class Application extends EventEmitter {
 
   private _router: any;
 
-  constructor(
-    protected uWSApp: uWS.TemplatedApp,
-    public opts?: ApplicationOptions,
-  ) {
+  constructor(protected uWSApp: uWS.TemplatedApp, public opts?: ApplicationOptions) {
     super();
 
     // Alias app.delete() = app.del()
-    uWSApp["delete"] = uWSApp["del"];
+    uWSApp['delete'] = uWSApp['del'];
 
     this.init();
   }
@@ -69,25 +56,17 @@ export class Application extends EventEmitter {
     this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
       const url = uwsRequest.getUrl();
 
-      const req = new IncomingMessage(
-        uwsRequest,
-        uwsResponse,
-        [],
-        this
-      );
+      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
       const res = new ServerResponse(uwsResponse, req, this);
 
       uwsResponse.onAborted(onAbort.bind(undefined, req, res));
 
       // read body data!
-      if (req.headers["content-length"]) {
+      if (req.headers['content-length']) {
         try {
-          await req["readBody"]();
+          await req['readBody']();
         } catch (e) {
-          console.warn(
-            "uWebSockets-express: failed reading request body at",
-            url
-          );
+          console.warn("uWebSockets-express: failed reading request body at", url);
         }
       }
 
@@ -106,16 +85,15 @@ export class Application extends EventEmitter {
 
     if (!this._router) {
       this._router = express.Router({
-        caseSensitive: this.enabled("case sensitive routing"),
-        strict: this.enabled("strict routing"),
+        caseSensitive: this.enabled('case sensitive routing'),
+        strict: this.enabled('strict routing')
       });
 
-      this._router.use(express.query(this.get("query parser fn")));
+      this._router.use(express.query(this.get('query parser fn')));
 
       const app = this;
       this._router.use(function expressInit(req, res, next) {
-        if (app.enabled("x-powered-by"))
-          res.setHeader("X-Powered-By", "Express");
+        if (app.enabled('x-powered-by')) res.setHeader('X-Powered-By', 'Express');
         req.res = res;
         res.req = req;
         req.next = next;
@@ -129,7 +107,7 @@ export class Application extends EventEmitter {
       });
     }
 
-    return;
+    return ;
   }
 
   public engine(ext: string, fn: EngineCallback) {
@@ -152,16 +130,13 @@ export class Application extends EventEmitter {
     return application.render.apply(this, arguments);
   }
 
-  public use(handler: RequestHandler);
-  public use(path: string, handler: RequestHandler);
-  public use(path: string, router: express.Router);
-  public use(path: string, ...handlers: Array<express.Router | RequestHandler>);
-  public use(path: string, any: any);
-  public use(any: any);
-  public use(
-    pathOrHandler: string | RequestHandler,
-    ...handlersOrRouters: Array<RequestHandler | express.Router>
-  ) {
+  public use(handler: RequestHandler)
+  public use(path: string, handler: RequestHandler)
+  public use(path: string, router: express.Router)
+  public use(path: string, ...handlers: Array<express.Router | RequestHandler>)
+  public use(path: string, any: any)
+  public use(any: any)
+  public use(pathOrHandler: string | RequestHandler, ...handlersOrRouters: Array<RequestHandler | express.Router>) {
     express.application.use.apply(this, arguments);
     return this;
   }
@@ -223,11 +198,13 @@ export class Application extends EventEmitter {
       close() {
         uWS.us_listen_socket_close(self.listeningSocket);
         self.listeningSocket = null;
-      },
+      }
     };
   }
 
   protected defaultConfiguration() {
     application.defaultConfiguration.apply(this);
   }
+
 }
+

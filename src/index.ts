@@ -1,8 +1,8 @@
 import uWS from "uWebSockets.js";
 import { Application } from "./Application";
 
-export default function (app: uWS.TemplatedApp) {
-  return new Application(app);
+export default function (app: uWS.TemplatedApp, readBodyMaxTime?: number) {
+  return new Application(app, readBodyMaxTime);
 }
 
 export { Application };

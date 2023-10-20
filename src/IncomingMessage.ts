@@ -6,8 +6,6 @@ import { URL } from "url";
 import { Socket } from "./Socket";
 import { request } from "express";
 
-const READ_BODY_MAX_TIME = 500;
-
 export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
   public url: string;
   public originalUrl: string; // used by express router
@@ -25,7 +23,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   private _bodydata: any;
   private _rawbody: any;
   private _remoteAddress: ArrayBuffer;
-  private _readableState = { pipes: [] };
+  private _readableState = { pipes: [] }; 
 
   public aborted: boolean;
 
@@ -39,6 +37,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     private res: uWS.HttpResponse,
     private parameterNames: string[],
     private app: any,
+    private readBodyMaxTime: number
   ) {
     super();
 
@@ -163,7 +162,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
           this.headers['content-length'] = String(body.length);
         }
         reject();
-      }, READ_BODY_MAX_TIME);
+      }, this.readBodyMaxTime);
 
       this.res.onData((arrayBuffer, isLast) => {
         const chunk = Buffer.from(arrayBuffer);

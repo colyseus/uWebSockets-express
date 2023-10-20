@@ -38,12 +38,14 @@ export class Application extends EventEmitter {
   protected response = express.response;
 
   private _router: any;
+  private _readBodyMaxTime: number;
 
-  constructor(protected uWSApp: uWS.TemplatedApp) {
+  constructor(protected uWSApp: uWS.TemplatedApp, readBodyMaxTime: number = 500) {
     super();
 
     // Alias app.delete() = app.del()
     uWSApp['delete'] = uWSApp['del'];
+    this._readBodyMaxTime = readBodyMaxTime;
 
     this.init();
   }
@@ -55,7 +57,7 @@ export class Application extends EventEmitter {
     this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
       const url = uwsRequest.getUrl();
 
-      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
+      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this, this._readBodyMaxTime);
       const res = new ServerResponse(uwsResponse, req, this);
 
       uwsResponse.onAborted(onAbort.bind(undefined, req, res));

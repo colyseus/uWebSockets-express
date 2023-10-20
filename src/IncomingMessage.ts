@@ -23,7 +23,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   private _bodydata: any;
   private _rawbody: any;
   private _remoteAddress: ArrayBuffer;
-  private _readableState = { pipes: [] }; 
+  private _readableState = { pipes: [] };
 
   public aborted: boolean;
 

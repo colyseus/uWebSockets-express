@@ -37,7 +37,7 @@ export class Application extends EventEmitter {
   protected request = express.request;
   protected response = express.response;
 
-  private _router: any; 
+  private _router: any;
 
   constructor(protected uWSApp: uWS.TemplatedApp, private readBodyMaxTime: number = 500) {
     super();

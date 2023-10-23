@@ -25,6 +25,7 @@ type EngineCallback = (path: string, options: object, callback: RenderCallback) 
 
 // const rootRegexpPath = pathToRegexp("/", [], { end: false, strict: false });
 
+export type ApplicationOptions = { readBodyMaxTime?: number }
 export class Application extends EventEmitter {
   // middlewares: MiddlewareList = [];
 
@@ -39,7 +40,7 @@ export class Application extends EventEmitter {
 
   private _router: any;
 
-  constructor(protected uWSApp: uWS.TemplatedApp) {
+  constructor(protected uWSApp: uWS.TemplatedApp, public opts?: ApplicationOptions) {
     super();
 
     // Alias app.delete() = app.del()

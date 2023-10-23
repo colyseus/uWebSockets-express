@@ -5,8 +5,7 @@ import EventEmitter from "events";
 import { URL } from "url";
 import { Socket } from "./Socket";
 import { request } from "express";
-
-const READ_BODY_MAX_TIME = 500;
+import { Application } from "./Application";
 
 export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
   public url: string;
@@ -26,6 +25,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   private _rawbody: any;
   private _remoteAddress: ArrayBuffer;
   private _readableState = { pipes: [] };
+  private _readBodyMaxTime = 500;
 
   public aborted: boolean;
 
@@ -38,7 +38,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     private req: uWS.HttpRequest,
     private res: uWS.HttpResponse,
     private parameterNames: string[],
-    private app: any,
+    private app: Application
   ) {
     super();
 
@@ -63,6 +63,10 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     }
 
     this.#_originalUrlParsed = new URL(`http://server${this.url}`);
+
+    if (this.app.opts?.readBodyMaxTime) {
+      this._readBodyMaxTime = this.app.opts.readBodyMaxTime;
+    }
   }
 
   get ip () {
@@ -163,7 +167,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
           this.headers['content-length'] = String(body.length);
         }
         reject();
-      }, READ_BODY_MAX_TIME);
+      }, this._readBodyMaxTime);
 
       this.res.onData((arrayBuffer, isLast) => {
         const chunk = Buffer.from(arrayBuffer);

@@ -82,6 +82,7 @@ app.listen(8000);
   - ❌ req.acceptsLanguages()
   - ❌ req.is()
   - ❌ req.range()
+  - ❌ req.pipe()
 
 ## Middleware support
 - ✅ [express/session](https://github.com/expressjs/session)

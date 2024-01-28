@@ -252,6 +252,14 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual("small body", data);
     })
 
+    it("multibyte character body", async () => {
+      app.use(express.json());      
+      app.post("/multibyte_body", (req, res) => res.end(req.body?.str));
+
+      const { data } = (await http.post(`${URL}/multibyte_body`, {str: "multibyte 世界 body"}));
+      assert.strictEqual("multibyte 世界 body", data);
+    })    
+
     it("parse large request body", async () => {
       app.post("/large_body", (req, res) => res.end(req.body));
 

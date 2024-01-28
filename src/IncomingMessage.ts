@@ -78,7 +78,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   }
 
   get body () {
-    return this._bodydata || this._rawbody;
+    return this._bodydata || this._rawbody?.toString();
   }
 
   get headers (): http.IncomingHttpHeaders {
@@ -163,7 +163,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
       //
       const rejectionTimeout = setTimeout(() => {
         if (body) {
-          this._rawbody = body.toString();
+          this._rawbody = body;
           this.headers['content-length'] = String(body.length);
         }
         reject();
@@ -175,8 +175,8 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
 
         if (isLast) {
           clearTimeout(rejectionTimeout);
-          this._rawbody = body.toString();
-          resolve(this._rawbody !== "");
+          this._rawbody = body;
+          resolve(body.length > 0);
         }
       });
     })

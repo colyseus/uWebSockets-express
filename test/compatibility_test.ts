@@ -116,8 +116,8 @@ describe("uWS Express API Compatibility", () => {
       });
 
       const response = (await http.get(`${URL}/cookie`)).headers;
-      assert.strictEqual(1, response['set-cookie'].length);
-      assert.match(response["set-cookie"][0], /^\s?my-cookie/);
+      assert.strictEqual(1, response['set-cookie']!.length);
+      assert.match(response["set-cookie"]![0], /^\s?my-cookie/);
     })
 
     it("clearCookie()", async () => {
@@ -127,8 +127,8 @@ describe("uWS Express API Compatibility", () => {
       });
 
       const response = (await http.get(`${URL}/clearcookie`)).headers;
-      assert.strictEqual(1, response['set-cookie'].length);
-      assert.match(response["set-cookie"][0], /^\s?my-cookie=\;/);
+      assert.strictEqual(1, response['set-cookie']!.length);
+      assert.match(response["set-cookie"]![0], /^\s?my-cookie=\;/);
     })
 
     it("render()", async () => {
@@ -298,6 +298,7 @@ describe("uWS Express API Compatibility", () => {
         res.json({ existing, nonexisting, useragent });
       });
 
+      // be sure to ONLY use axios 1.4 in package.json for this test
       assert.deepStrictEqual({
         existing: "one",
         useragent: "axios/1.4.0",
@@ -440,12 +441,12 @@ describe("uWS Express API Compatibility", () => {
     it("should run at every request", async () => {
       app.use((req, res, next) => {
         res.set("header1", "one");
-        next();
+        next!();
       });
 
       app.use((req, res, next) => {
         res.set("header2", "two");
-        next();
+        next!();
       });
 
       app.get("/hey", (req, res) => res.end("done"));
@@ -459,17 +460,17 @@ describe("uWS Express API Compatibility", () => {
     it("should support middlewares at specific segments", async () => {
       app.use((req, res, next) => {
         res.set("catch-all", "all");
-        next();
+        next!();
       });
 
       app.use("/users/:id", (req, res, next) => {
         res.set("token", req.params['id']);
-        next();
+        next!();
       });
 
       app.use("/teams", (req, res, next) => {
         res.set("team", "team");
-        next();
+        next!();
       });
 
       app.get("/users/:id", (req, res) => res.json({ user: req.params.id }));
@@ -544,7 +545,7 @@ describe("uWS Express API Compatibility", () => {
 
       app.get("/one", (req, res, next) => {
         req['something'] = true;
-        next();
+        next!();
 
       }, (req, res) => {
         // @ts-ignore

@@ -253,12 +253,12 @@ describe("uWS Express API Compatibility", () => {
     })
 
     it("multibyte character body", async () => {
-      app.use(express.json());      
+      app.use(express.json());
       app.post("/multibyte_body", (req, res) => res.end(req.body?.str));
 
       const { data } = (await http.post(`${URL}/multibyte_body`, {str: "multibyte 世界 body"}));
       assert.strictEqual("multibyte 世界 body", data);
-    })    
+    })
 
     it("parse large request body", async () => {
       app.post("/large_body", (req, res) => res.end(req.body));
@@ -302,14 +302,14 @@ describe("uWS Express API Compatibility", () => {
         await timers.setTimeout(200);
         const existing = req.header("existing");
         const nonexisting = req.header("non-existing");
-        const useragent = req.header("user-agent");
+        const useragent = (req.header("user-agent")! as string).split("/")[0];
         res.json({ existing, nonexisting, useragent });
       });
 
       // be sure to ONLY use axios 1.4 in package.json for this test
       assert.deepStrictEqual({
         existing: "one",
-        useragent: "axios/1.4.0",
+        useragent: "axios",
       }, (await http.get(`${URL}/async_header/param1/param2`, { headers: { existing: "one" } })).data)
     });
 

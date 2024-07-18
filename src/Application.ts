@@ -4,12 +4,8 @@ import express, { NextFunction, application } from "express";
 
 // import pathToRegexp from "path-to-regexp";
 
-import { IncomingMessage } from "./IncomingMessage";
-import { ServerResponse } from "./ServerResponse";
-
-function getUrlParameters (url: string) {
-  return (url.match(/:([a-zA-Z0-9\_]+)/gi) || []).map((param) => param.substr(1));
-}
+import { IncomingMessage } from "./IncomingMessage.js";
+import { ServerResponse } from "./ServerResponse.js";
 
 function onAbort(req: IncomingMessage, res: ServerResponse) {
   req.socket.readable = false;
@@ -18,7 +14,6 @@ function onAbort(req: IncomingMessage, res: ServerResponse) {
 }
 
 type RequestHandler = (req: IncomingMessage, res: ServerResponse, next?: NextFunction) => void;
-type MiddlewareList = Array<{ regexp?: RegExp, handler: RequestHandler }>;
 
 export type RenderCallback = (e: any, rendered?: string) => void;
 type EngineCallback = (path: string, options: object, callback: RenderCallback) => void;
@@ -27,7 +22,6 @@ type EngineCallback = (path: string, options: object, callback: RenderCallback) 
 
 export type ApplicationOptions = { readBodyMaxTime?: number }
 export class Application extends EventEmitter {
-  // middlewares: MiddlewareList = [];
 
   // engines: {[ext: string]: EngineCallback} = {};
   // settings: {[setting: string]: any} = {};

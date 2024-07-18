@@ -1,5 +1,5 @@
 import uWS from "uWebSockets.js";
-import { Application, ApplicationOptions } from "./Application";
+import { Application, ApplicationOptions } from "./Application.js";
 
 export default function (
   app: uWS.TemplatedApp,
@@ -9,6 +9,6 @@ export default function (
 }
 
 export { Application };
-export { IncomingMessage } from "./IncomingMessage";
-export { ServerResponse } from "./ServerResponse";
-export { Socket } from "./Socket";
+export { IncomingMessage } from "./IncomingMessage.js";
+export { ServerResponse } from "./ServerResponse.js";
+export { Socket } from "./Socket.js";

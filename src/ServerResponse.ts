@@ -3,7 +3,6 @@ import mime from "mime";
 import EventEmitter from "events";
 import uWS, { RecognizedString } from "uWebSockets.js";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
-import { Socket } from "./Socket";
 import { response, CookieOptions } from "express";
 import http from "http";
 import merge from "utils-merge";
@@ -15,7 +14,6 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
   private _writes: any[] = [];
 
   public statusCode: number = 200;
-  // public socket = new Socket(true, false);
   public headersSent: boolean = false;
   public finished: boolean = false;
   public aborted: boolean;

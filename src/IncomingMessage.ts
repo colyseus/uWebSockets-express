@@ -3,9 +3,9 @@ import http from "http";
 import querystring from "querystring";
 import EventEmitter from "events";
 import { URL } from "url";
-import { Socket } from "./Socket";
 import { request } from "express";
-import { Application } from "./Application";
+import { Socket } from "./Socket.js";
+import { Application } from "./Application.js";
 
 export class IncomingMessage extends EventEmitter implements http.IncomingMessage {
   public url: string;

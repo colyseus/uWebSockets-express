@@ -16,7 +16,7 @@
   },
   "author": "Endel Dreyer",
   "files": [
-    "lib",
+    "build",
     "README.md"
   ],
   "license": "MIT",

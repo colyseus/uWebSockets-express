@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style media="all">
+      body{
+        margin: 0;
+      }
+
+      #hi {
+        height: 500px; /* Element */
+        margin: 0;
+        padding: 0;
+        line-height:500px;
+        text-align: center;
+
+        font-size: 5em; /* Font */
+        font-family: Monospace;
+        word-wrap: break-word;
+        color: #fff;
+
+        background: rgb(13,0,232); /* Background */
+        background: linear-gradient(45deg, rgba(13,0,232,1) 0%, rgba(0,212,255,1) 100%);
+      }
+
+      .hr-line {
+        height: 0px;
+	      margin: 0px 0;
+	      padding: 0;
+	      height: 0;
+	      border: none;
+	      border-top: 1px solid #333;
+      }
+
+      #name {
+        height: 500px; /* Element */
+        margin:0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+
+        font-size: 3em; /* Font */
+        font-family: Monospace;
+        word-wrap: break-word;
+        color: #fff;
+
+        background: rgb(13,0,232); /* Background */
+        background: linear-gradient(45deg, rgba(13,0,232,1) 0%, rgba(255,0,215,1) 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="hi">Hello World</h1>
+    <hr class="hr-line">
+    <h2 id="name"><%= name + ", I know your age. Is " + age + "... May be."%></h2>
+  </body>
+</html>

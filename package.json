@@ -19,7 +19,8 @@
   },
   "scripts": {
     "prepublishOnly": "node build.mjs",
-    "test": "mocha test/*.ts --require ts-node/register"
+    "test": "mocha test/*.ts --require ts-node/register",
+    "typecheck": "tsc --noEmit"
   },
   "author": "Endel Dreyer",
   "files": [

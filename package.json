@@ -19,7 +19,7 @@
   },
   "scripts": {
     "prepublishOnly": "node build.mjs",
-    "test": "mocha test/*.ts --require ts-node/register",
+    "test": "mocha --require tsx test/*.ts ",
     "typecheck": "tsc --noEmit"
   },
   "author": "Endel Dreyer",
@@ -50,8 +50,7 @@
     "pug": "^3.0.2",
     "serve-index": "^1.9.1",
     "serve-static": "^1.14.1",
-    "ts-node": "^10.0.0",
-    "ts-node-dev": "^1.1.8",
+    "tsx": "^4.19.0",
     "typescript": "^4.3.4",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.24.0"
   },

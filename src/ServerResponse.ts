@@ -45,11 +45,11 @@ export class ServerResponse extends EventEmitter /* implements http.ServerRespon
       // write status + headers
       this.writeHead(this.statusCode || this.statusCode, this._headers);
 
-      // dequeue writes
-      this._writes.forEach((chunk) => this.res.write(chunk));
-
       // write response
       this.res.cork(() => {
+        // dequeue writes
+        this._writes.forEach((chunk) => this.res.write(chunk));
+
         this.res.end(body);
       });
     }

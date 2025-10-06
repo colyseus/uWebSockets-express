@@ -4,7 +4,7 @@ import { Application, ApplicationOptions } from "./Application.js";
 export default function (
   app: uWS.TemplatedApp,
   options?: ApplicationOptions
-) {
+): Express.Application {
   return new Application(app, options);
 }
 

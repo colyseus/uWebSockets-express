@@ -1,41 +1,37 @@
 import uWS from "uWebSockets.js";
 import EventEmitter from "events";
-import express, { NextFunction, application } from "express";
-
-// import pathToRegexp from "path-to-regexp";
+import express, { NextFunction, Router, application } from "express";
 
 import { IncomingMessage } from "./IncomingMessage.js";
 import { ServerResponse } from "./ServerResponse.js";
+import { mixin } from "./utils.js";
 
 function onAbort(req: IncomingMessage, res: ServerResponse) {
+  console.log("onAbort...");
   req.socket.readable = false;
   res.finished = true;
   res.aborted = true;
 }
 
-type RequestHandler = (req: IncomingMessage, res: ServerResponse, next?: NextFunction) => void;
-
 export type RenderCallback = (e: any, rendered?: string) => void;
-type EngineCallback = (path: string, options: object, callback: RenderCallback) => void;
-
-// const rootRegexpPath = pathToRegexp("/", [], { end: false, strict: false });
 
 export type ApplicationOptions = { readBodyMaxTime?: number }
-export class Application extends EventEmitter {
-
-  // engines: {[ext: string]: EngineCallback} = {};
-  // settings: {[setting: string]: any} = {};
-  // cache: {[id: string]: any} = {};
+export class Application extends EventEmitter implements express.Application {
 
   protected listeningSocket: any = undefined;
 
   protected request = express.request;
   protected response = express.response;
 
-  private _router: any;
+  protected router: Router;
 
   constructor(protected uWSApp: uWS.TemplatedApp, public opts?: ApplicationOptions) {
     super();
+
+    mixin(this, application);
+
+    // perform original express initialization
+    application.init.apply(this, arguments);
 
     // Alias app.delete() = app.del()
     uWSApp['delete'] = uWSApp['del'];
@@ -44,9 +40,6 @@ export class Application extends EventEmitter {
   }
 
   protected init() {
-    // perform original express initialization
-    application.init.apply(this, arguments);
-
     this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
       const url = uwsRequest.getUrl();
 
@@ -68,119 +61,84 @@ export class Application extends EventEmitter {
     });
   }
 
-  protected handle(req, res, callback?) {
-    (express.application as any).handle.call(this, req, res, callback);
-  }
+  // public engine(ext: string, fn: EngineCallback) {
+  //   application.engine.apply(this, arguments);
+  // }
 
-  protected lazyrouter() {
-    // DISCARDED: original lazyrouter auto-initializes "expressInit", which
-    // overrides the prototype of request/response, which we can't let happen
-    // (express.application as any).lazyrouter.apply(this, arguments);
+  // public set(setting, val) {
+  //   return application.set.apply(this, arguments);
+  // }
 
-    if (!this._router) {
-      this._router = express.Router({
-        caseSensitive: this.enabled('case sensitive routing'),
-        strict: this.enabled('strict routing')
-      });
+  // public enable(setting: string) {
+  //   return application.enable.call(this, setting);
+  // }
 
-      this._router.use(express.query(this.get('query parser fn')));
+  // public enabled(setting: string) {
+  //   return application.enabled.call(this, setting);
+  // }
 
-      const app = this;
-      this._router.use(function expressInit(req, res, next) {
-        if (app.enabled('x-powered-by')) res.setHeader('X-Powered-By', 'Express');
-        req.res = res;
-        res.req = req;
-        req.next = next;
+  // public render(name: string, options: any, callback: RenderCallback) {
+  //   return application.render.apply(this, arguments);
+  // }
 
-        // setPrototypeOf(req, app.request)
-        // setPrototypeOf(res, app.response)
+  // public use(handler: RequestHandler)
+  // public use(path: string, handler: RequestHandler)
+  // public use(path: string, router: express.Router)
+  // public use(path: string, ...handlers: Array<express.Router | RequestHandler>)
+  // public use(path: string, any: any)
+  // public use(any: any)
+  // public use(pathOrHandler: string | RequestHandler, ...handlersOrRouters: Array<RequestHandler | express.Router>) {
+  //   express.application.use.apply(this, arguments);
+  //   return this;
+  // }
 
-        res.locals = res.locals || Object.create(null);
+  // public get(path: string, ...handlers: RequestHandler[]) {
+  //   return express.application.get.apply(this, arguments);
+  // }
 
-        next();
-      });
-    }
+  // public post(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.post.apply(this, arguments);
+  //   return this;
+  // }
 
-    return ;
-  }
+  // public patch(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.patch.apply(this, arguments);
+  //   return this;
+  // }
 
-  public engine(ext: string, fn: EngineCallback) {
-    application.engine.apply(this, arguments);
-  }
+  // public options(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.options.apply(this, arguments);
+  //   return this;
+  // }
 
-  public set(setting, val) {
-    return application.set.apply(this, arguments);
-  }
+  // public put(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.put.apply(this, arguments);
+  //   return this;
+  // }
 
-  public enable(setting: string) {
-    return application.enable.call(this, setting);
-  }
+  // /**
+  //  * @deprecated
+  //  */
+  // public del(path: string, ...handlers: RequestHandler[]) {
+  //   return this.delete.apply(this, arguments);
+  // }
 
-  public enabled(setting: string) {
-    return application.enabled.call(this, setting);
-  }
+  // public delete(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.delete.apply(this, arguments);
+  //   return this;
+  // }
 
-  public render(name: string, options: any, callback: RenderCallback) {
-    return application.render.apply(this, arguments);
-  }
+  // public head(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.head.apply(this, arguments);
+  //   return this;
+  // }
 
-  public use(handler: RequestHandler)
-  public use(path: string, handler: RequestHandler)
-  public use(path: string, router: express.Router)
-  public use(path: string, ...handlers: Array<express.Router | RequestHandler>)
-  public use(path: string, any: any)
-  public use(any: any)
-  public use(pathOrHandler: string | RequestHandler, ...handlersOrRouters: Array<RequestHandler | express.Router>) {
-    express.application.use.apply(this, arguments);
-    return this;
-  }
+  // public all(path: string, ...handlers: RequestHandler[]) {
+  //   express.application.all.apply(this, arguments);
+  //   return this;
+  // }
 
-  public get(path: string, ...handlers: RequestHandler[]) {
-    return express.application.get.apply(this, arguments);
-  }
-
-  public post(path: string, ...handlers: RequestHandler[]) {
-    express.application.post.apply(this, arguments);
-    return this;
-  }
-
-  public patch(path: string, ...handlers: RequestHandler[]) {
-    express.application.patch.apply(this, arguments);
-    return this;
-  }
-
-  public options(path: string, ...handlers: RequestHandler[]) {
-    express.application.options.apply(this, arguments);
-    return this;
-  }
-
-  public put(path: string, ...handlers: RequestHandler[]) {
-    express.application.put.apply(this, arguments);
-    return this;
-  }
-
-  /**
-   * @deprecated
-   */
-  public del(path: string, ...handlers: RequestHandler[]) {
-    return this.delete.apply(this, arguments);
-  }
-
-  public delete(path: string, ...handlers: RequestHandler[]) {
-    express.application.delete.apply(this, arguments);
-    return this;
-  }
-
-  public head(path: string, ...handlers: RequestHandler[]) {
-    express.application.head.apply(this, arguments);
-    return this;
-  }
-
-  public all(path: string, ...handlers: RequestHandler[]) {
-    express.application.all.apply(this, arguments);
-    return this;
-  }
-
+  // @ts-ignore
   public listen(port?: number, cb?: () => void) {
     this.uWSApp.listen(port, (listenSocket: any) => {
       this.listeningSocket = listenSocket;
@@ -194,10 +152,6 @@ export class Application extends EventEmitter {
         self.listeningSocket = null;
       }
     };
-  }
-
-  protected defaultConfiguration() {
-    application.defaultConfiguration.apply(this);
   }
 
 }

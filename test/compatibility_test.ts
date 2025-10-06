@@ -11,29 +11,45 @@ import rawHttp from 'http';
 import url from 'url';
 import timers from "timers/promises";
 
-const PORT = 9999;
-const URL = `http://localhost:${PORT}`;
+const BASE_PORT = 9999;
+let currentPort = BASE_PORT;
 
 describe("uWS Express API Compatibility", () => {
   let app: ReturnType<typeof expressify>;
   let server: ReturnType<ReturnType<typeof expressify>['listen']>;
+  let uWSApp: uWS.TemplatedApp;
+  let currentURL: string;
 
   beforeEach(async () => {
-    app = expressify(uWS.App());
-    server = app.listen(PORT, () => {});
+    // Use a different port for each test to avoid conflicts
+    const port = currentPort++;
+    currentURL = `http://localhost:${port}`;
+
+    // Create a fresh uWS app for each test to avoid route handler conflicts
+    uWSApp = uWS.App();
+    app = expressify(uWSApp);
+
+    // Wait for server to be ready before proceeding
+    await new Promise<void>((resolve) => {
+      server = app.listen(port, () => {
+        resolve();
+      });
+    });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     server.close();
+    // Give the server time to fully close before the next test
+    await new Promise(resolve => setTimeout(resolve, 10));
   });
 
   describe("response", () => {
     it("respond to fallback route", async () => {
-      const response = await http.get(`${URL}/not_found`, { validateStatus: null });
+      const response = await http.get(`${currentURL}/not_found`, { validateStatus: null });
       assert.strictEqual(StatusCodes.NOT_FOUND, response.status);
       assert.ok(response.data.includes("Cannot GET /not_found"));
 
-      const response2 = await http.post(`${URL}/not_found2`, {}, { validateStatus: null });
+      const response2 = await http.post(`${currentURL}/not_found2`, {}, { validateStatus: null });
       assert.strictEqual(StatusCodes.NOT_FOUND, response2.status);
       assert.ok(response2.data.includes("Cannot POST /not_found2"));
     });
@@ -43,7 +59,7 @@ describe("uWS Express API Compatibility", () => {
         res.status(StatusCodes.CREATED).end();
       });
 
-      const response = await http.get(`${URL}/status`);
+      const response = await http.get(`${currentURL}/status`);
       assert.strictEqual(StatusCodes.CREATED, response.status);
     });
 
@@ -52,7 +68,7 @@ describe("uWS Express API Compatibility", () => {
         res.end("Hello world!");
       });
 
-      const response = await http.get(`${URL}/end`);
+      const response = await http.get(`${currentURL}/end`);
       assert.strictEqual("Hello world!", response.data);
     });
 
@@ -69,7 +85,7 @@ describe("uWS Express API Compatibility", () => {
         res.end();
       });
 
-      const response = await http.get(`${URL}/headers`);
+      const response = await http.get(`${currentURL}/headers`);
       assert.strictEqual("yes!", response.headers['definitely']);
       assert.strictEqual(undefined, response.headers['something']);
     });
@@ -79,7 +95,7 @@ describe("uWS Express API Compatibility", () => {
         res.json({ hello: "world" });
       });
 
-      const response = await http.get(`${URL}/json`);
+      const response = await http.get(`${currentURL}/json`);
       assert.strictEqual("application/json", response.headers['content-type']);
       assert.deepStrictEqual({ hello: "world" }, response.data);
     });
@@ -93,7 +109,7 @@ describe("uWS Express API Compatibility", () => {
         res.redirect("/redirected");
       });
 
-      const response = await http.get(`${URL}/redirect`);
+      const response = await http.get(`${currentURL}/redirect`);
       // console.log(response);
       assert.strictEqual("final", response.data);
     });
@@ -105,7 +121,7 @@ describe("uWS Express API Compatibility", () => {
         res.end();
       });
 
-      const response = (await http.get(`${URL}/append`)).headers;
+      const response = (await http.get(`${currentURL}/append`)).headers;
       assert.strictEqual("hello, world", response['my-cookie']);
     })
 
@@ -115,7 +131,7 @@ describe("uWS Express API Compatibility", () => {
         res.end();
       });
 
-      const response = (await http.get(`${URL}/cookie`)).headers;
+      const response = (await http.get(`${currentURL}/cookie`)).headers;
       assert.strictEqual(1, response['set-cookie']!.length);
       assert.match(response["set-cookie"]![0], /^\s?my-cookie/);
     })
@@ -126,7 +142,7 @@ describe("uWS Express API Compatibility", () => {
         res.end();
       });
 
-      const response = (await http.get(`${URL}/clearcookie`)).headers;
+      const response = (await http.get(`${currentURL}/clearcookie`)).headers;
       assert.strictEqual(1, response['set-cookie']!.length);
       assert.match(response["set-cookie"]![0], /^\s?my-cookie=\;/);
     })
@@ -149,7 +165,7 @@ describe("uWS Express API Compatibility", () => {
         res.render('render', { title: "Rendering" });
       });
 
-      const body = (await http.get(`${URL}/render`)).data;
+      const body = (await http.get(`${currentURL}/render`)).data;
       assert.strictEqual("RenderingIt works!", body);
     });
 
@@ -163,7 +179,7 @@ describe("uWS Express API Compatibility", () => {
         res.end();
       });
 
-      const headers = (await http.head(`${URL}/params/one/two`)).headers;
+      const headers = (await http.head(`${currentURL}/params/one/two`)).headers;
       assert.strictEqual("1", headers.field1);
       assert.strictEqual("2", headers.field2);
     });
@@ -179,12 +195,12 @@ describe("uWS Express API Compatibility", () => {
       assert.deepStrictEqual({
         one: "one",
         two: "two"
-      }, (await http.get(`${URL}/params/one/two`)).data);
+      }, (await http.get(`${currentURL}/params/one/two`)).data);
 
       assert.deepStrictEqual({
         one: "another",
         two: "1"
-      }, (await http.get(`${URL}/params/another/1`)).data);
+      }, (await http.get(`${currentURL}/params/another/1`)).data);
     });
 
     it("query", async () => {
@@ -192,7 +208,7 @@ describe("uWS Express API Compatibility", () => {
         res.json(req.query);
       });
 
-      const response = await http.get(`${URL}/query?one=1&two=2&three=3&four=4`);
+      const response = await http.get(`${currentURL}/query?one=1&two=2&three=3&four=4`);
       assert.deepStrictEqual({
         one: "1",
         two: "2",
@@ -206,7 +222,7 @@ describe("uWS Express API Compatibility", () => {
         res.json(req.headers);
       });
 
-      const response = await http.get(`${URL}/headers`, {
+      const response = await http.get(`${currentURL}/headers`, {
         headers: {
           one: "1",
           cookie: "mycookie",
@@ -228,7 +244,7 @@ describe("uWS Express API Compatibility", () => {
         });
       });
 
-      const { data } = (await http.get(`${URL}/properties?something=true`));
+      const { data } = (await http.get(`${currentURL}/properties?something=true`));
       assert.deepStrictEqual({
         method: "GET",
         path: "/properties",
@@ -241,14 +257,14 @@ describe("uWS Express API Compatibility", () => {
         res.json({ ip: req.ip });
       });
 
-      const { data } = (await http.get(`${URL}/ip`));
+      const { data } = (await http.get(`${currentURL}/ip`));
       assert.strictEqual(39, data.ip.length);
     });
 
     it("parse small request body", async () => {
       app.post("/small_body", (req, res) => res.end(req.body));
 
-      const { data } = (await http.post(`${URL}/small_body`, "small body"));
+      const { data } = (await http.post(`${currentURL}/small_body`, "small body"));
       assert.strictEqual("small body", data);
     })
 
@@ -256,7 +272,7 @@ describe("uWS Express API Compatibility", () => {
       app.use(express.json());
       app.post("/multibyte_body", (req, res) => res.end(req.body?.str));
 
-      const { data } = (await http.post(`${URL}/multibyte_body`, {str: "multibyte 世界 body"}));
+      const { data } = (await http.post(`${currentURL}/multibyte_body`, {str: "multibyte 世界 body"}));
       assert.strictEqual("multibyte 世界 body", data);
     })
 
@@ -268,7 +284,7 @@ describe("uWS Express API Compatibility", () => {
         largeBody += "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*(),./;'[]<>?:{}-=_+\"`~";
       }
 
-      const { data } = (await http.post(`${URL}/large_body`, largeBody));
+      const { data } = (await http.post(`${currentURL}/large_body`, largeBody));
       assert.strictEqual(largeBody, data);
     })
 
@@ -281,7 +297,7 @@ describe("uWS Express API Compatibility", () => {
       });
 
       const cancelTokenSource = http.CancelToken.source();
-      const request = http.post(`${URL}/will_abort`, { hello: "world" }, {
+      const request = http.post(`${currentURL}/will_abort`, { hello: "world" }, {
         cancelToken: cancelTokenSource.token
       });
       await timers.setTimeout(350);
@@ -310,7 +326,7 @@ describe("uWS Express API Compatibility", () => {
       assert.deepStrictEqual({
         existing: "one",
         useragent: "axios",
-      }, (await http.get(`${URL}/async_header/param1/param2`, { headers: { existing: "one" } })).data)
+      }, (await http.get(`${currentURL}/async_header/param1/param2`, { headers: { existing: "one" } })).data)
     });
 
   });
@@ -324,10 +340,10 @@ describe("uWS Express API Compatibility", () => {
       routes.put("/four", (req, res) => res.json({ four: "four" }));
       app.use("/routes", routes);
 
-      assert.deepStrictEqual({ one: "param1" }, (await http.get(`${URL}/routes/one/param1`)).data);
-      assert.deepStrictEqual({ two: "two" }, (await http.post(`${URL}/routes/two`)).data);
-      assert.deepStrictEqual({ three: "three" }, (await http.delete(`${URL}/routes/three`)).data);
-      assert.deepStrictEqual({ four: "four" }, (await http.put(`${URL}/routes/four`)).data);
+      assert.deepStrictEqual({ one: "param1" }, (await http.get(`${currentURL}/routes/one/param1`)).data);
+      assert.deepStrictEqual({ two: "two" }, (await http.post(`${currentURL}/routes/two`)).data);
+      assert.deepStrictEqual({ three: "three" }, (await http.delete(`${currentURL}/routes/three`)).data);
+      assert.deepStrictEqual({ four: "four" }, (await http.put(`${currentURL}/routes/four`)).data);
     });
 
     it("should support nested routes", async () => {
@@ -347,9 +363,9 @@ describe("uWS Express API Compatibility", () => {
       root.use("/branch2", branch2);
 
       app.use("/root", root);
-      assert.deepStrictEqual({ one: 1 }, (await http.get(`${URL}/root/branch1/one`)).data);
-      assert.deepStrictEqual({ two: 2 }, (await http.get(`${URL}/root/branch2/two`)).data);
-      assert.deepStrictEqual({ deep: true }, (await http.get(`${URL}/root/branch2/deep/three`)).data);
+      assert.deepStrictEqual({ one: 1 }, (await http.get(`${currentURL}/root/branch1/one`)).data);
+      assert.deepStrictEqual({ two: 2 }, (await http.get(`${currentURL}/root/branch2/two`)).data);
+      assert.deepStrictEqual({ deep: true }, (await http.get(`${currentURL}/root/branch2/deep/three`)).data);
     });
 
     it("should attach middleware + handler", async () => {
@@ -365,7 +381,7 @@ describe("uWS Express API Compatibility", () => {
 
       app.use("/router", router);
 
-      assert.deepStrictEqual({ something: true }, (await http.get(`${URL}/router/with_middleware`)).data);
+      assert.deepStrictEqual({ something: true }, (await http.get(`${currentURL}/router/with_middleware`)).data);
     });
 
     it("should accept Router as last argument for .get()", async () => {
@@ -392,7 +408,7 @@ describe("uWS Express API Compatibility", () => {
       assert.deepStrictEqual({
         first_middleware: 1,
         something: true,
-      }, (await http.get(`${URL}/router/router`)).data);
+      }, (await http.get(`${currentURL}/router/router`)).data);
     });
 
     it("should use middlewares on basePath of router", async () => {
@@ -403,8 +419,8 @@ describe("uWS Express API Compatibility", () => {
       })
       app.use("/router", router);
 
-      assert.deepStrictEqual({ response: true, }, (await http.get(`${URL}/router/api`)).data);
-      assert.deepStrictEqual("Hello world", (await http.get(`${URL}/router/index.html`)).data);
+      assert.deepStrictEqual({ response: true, }, (await http.get(`${currentURL}/router/api`)).data);
+      assert.deepStrictEqual("Hello world", (await http.get(`${currentURL}/router/index.html`)).data);
     });
 
     it("urls should always start with /", async () => {
@@ -424,7 +440,7 @@ describe("uWS Express API Compatibility", () => {
         path: "/",
         url: "/?token=xxx",
         originalUrl: "/auth?token=xxx",
-      }, (await http.get(`${URL}/auth?token=xxx`)).data);
+      }, (await http.get(`${currentURL}/auth?token=xxx`)).data);
     });
 
   });
@@ -441,7 +457,7 @@ describe("uWS Express API Compatibility", () => {
 
       app.use("/root", root);
 
-      const response = await http.get(`${URL}/root/hello`);
+      const response = await http.get(`${currentURL}/root/hello`);
       assert.strictEqual("hello", response.data);
       assert.strictEqual("all", response.headers['catch-all']);
     });
@@ -459,7 +475,7 @@ describe("uWS Express API Compatibility", () => {
 
       app.get("/hey", (req, res) => res.end("done"));
 
-      const response = await http.get(`${URL}/hey`);
+      const response = await http.get(`${currentURL}/hey`);
       assert.strictEqual("done", response.data);
       assert.strictEqual("one", response.headers['header1']);
       assert.strictEqual("two", response.headers['header2']);
@@ -483,7 +499,7 @@ describe("uWS Express API Compatibility", () => {
 
       app.get("/users/:id", (req, res) => res.json({ user: req.params.id }));
 
-      const response = await http.get(`${URL}/users/10`);
+      const response = await http.get(`${currentURL}/users/10`);
       assert.deepStrictEqual({ user: "10" }, response.data);
       assert.strictEqual("all", response.headers['catch-all']);
       assert.strictEqual("10", response.headers['token']);
@@ -497,7 +513,7 @@ describe("uWS Express API Compatibility", () => {
         res.json(req.body);
       });
 
-      const response = await http.options(`${URL}/cors`);
+      const response = await http.options(`${currentURL}/cors`);
       assert.strictEqual('*', response.headers['access-control-allow-origin']);
     })
 
@@ -505,14 +521,14 @@ describe("uWS Express API Compatibility", () => {
       app.use(express.json());
       app.post("/json", (req, res) => res.json(req.body));
 
-      const response = await http.post(`${URL}/json`, { hello: "world" });
+      const response = await http.post(`${currentURL}/json`, { hello: "world" });
       assert.deepStrictEqual({ hello: "world" }, response.data);
     })
 
     it("should read body as plain text", async () => {
       app.post("/json", (req, res) => res.json(req.body));
 
-      const response = await http.post(`${URL}/json`, { hello: "world" });
+      const response = await http.post(`${currentURL}/json`, { hello: "world" });
       assert.deepStrictEqual('{"hello":"world"}', response.data);
     })
 
@@ -522,7 +538,7 @@ describe("uWS Express API Compatibility", () => {
         res.json(req.body);
       });
 
-      const response = await http.post(`${URL}/post_urlencoded`, "hello=world&foo=bar", {
+      const response = await http.post(`${currentURL}/post_urlencoded`, "hello=world&foo=bar", {
         headers: {
           "Content-Type": 'application/x-www-form-urlencoded',
         }
@@ -541,7 +557,7 @@ describe("uWS Express API Compatibility", () => {
         res.json(req.body);
       });
 
-      const response = await http.post(`${URL}/json_urlencoded`, { hello: "world" });
+      const response = await http.post(`${currentURL}/json_urlencoded`, { hello: "world" });
 
       assert.deepStrictEqual({
         hello: "world",
@@ -560,7 +576,7 @@ describe("uWS Express API Compatibility", () => {
         res.json({ something: req['something'] });
       });
 
-      const response = await http.get(`${URL}/one`);
+      const response = await http.get(`${currentURL}/one`);
 
       assert.deepStrictEqual({
         something: true,
@@ -576,7 +592,7 @@ describe("uWS Express API Compatibility", () => {
       app.use(express.json());
       app.post("/content_length", (req, res) => res.json({ success: true }));
 
-      const opts = url.parse(`${URL}/content_length`)
+      const opts = url.parse(`${currentURL}/content_length`)
       const data = { email: "mymail@gmail.com", password: "test" };
 
       // @ts-ignore
@@ -601,7 +617,7 @@ describe("uWS Express API Compatibility", () => {
       app.use(express.json());
       app.post("/content_length_higher", (req, res) => res.json({ success: true }));
 
-      const opts = url.parse(`${URL}/content_length_higher`)
+      const opts = url.parse(`${currentURL}/content_length_higher`)
       const data = { email: "mymail@gmail.com" };
 
       // @ts-ignore
@@ -640,7 +656,7 @@ describe("uWS Express API Compatibility", () => {
 
       app.use('/colyseus', root);
 
-      const opts = url.parse(`${URL}/colyseus/api`)
+      const opts = url.parse(`${currentURL}/colyseus/api`)
       // @ts-ignore
       opts.method = "GET";
 

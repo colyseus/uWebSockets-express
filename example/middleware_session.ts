@@ -5,9 +5,6 @@ import expressify from "../src";
 const PORT = 8080;
 const app = expressify(uWS.App());
 
-// app.use(cookieParser());
-app.set('trust proxy', 1) // trust first proxy
-
 // Use the session middleware
 app.use(session({
   secret: "shhh",
@@ -34,4 +31,4 @@ app.get('/', (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log("Listening on", PORT));

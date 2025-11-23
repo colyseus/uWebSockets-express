@@ -48,9 +48,11 @@ export class ServerResponse extends OutgoingMessage {
         body = Buffer.from(chunk, encoding).toString();
       }
 
-      // write status + headers
-      // @ts-ignore
-      this.writeHead(this.statusCode || this.statusCode, this[kOutHeaders]);
+      // write status + headers (only if not already sent)
+      if (!this._headerSent) {
+        // @ts-ignore
+        this.writeHead(this.statusCode || this.statusCode, this[kOutHeaders]);
+      }
 
       // write response
       this.res.cork(() => {

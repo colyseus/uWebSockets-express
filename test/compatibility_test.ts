@@ -529,7 +529,7 @@ describe("uWS Express API Compatibility", () => {
       app.post("/json", (req, res) => res.json(req.body));
 
       const response = await http.post(`${currentURL}/json`, { hello: "world" });
-      assert.deepStrictEqual('{"hello":"world"}', response.data);
+      assert.strictEqual('{"hello":"world"}', response.data);
     })
 
     it("should support urlencoded()", async () => {

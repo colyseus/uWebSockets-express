@@ -78,6 +78,11 @@ export class ServerResponse extends OutgoingMessage {
         this[kOutHeaders] = headers = { __proto__: null };
       }
 
+      // Skip Content-Length - uWebSockets will set it automatically based on body size
+      if (name.toLowerCase() === 'content-length') {
+        return this;
+      }
+
       headers[name.toLowerCase()] = value;
 
       return this;

@@ -19,7 +19,7 @@ export class ServerResponse extends OutgoingMessage {
   public aborted: boolean;
 
   protected _headerSent?: boolean;
-  protected outputData: any[];
+  protected outputData: any[] = [];
   protected outputSize?: number;
 
   constructor(
@@ -39,8 +39,8 @@ export class ServerResponse extends OutgoingMessage {
       return true;
     }
 
+    // @ts-ignore
     this.end = (chunk?: string, encoding?: BufferEncoding) => {
-
       if (this.writableEnded) { return; }
 
       let body = chunk;
@@ -49,13 +49,16 @@ export class ServerResponse extends OutgoingMessage {
       }
 
       // write status + headers
+      // @ts-ignore
       this.writeHead(this.statusCode || this.statusCode, this[kOutHeaders]);
 
       // write response
       this.res.cork(() => {
-        this.outputData.forEach((chunk) => {
-          this.res.write(chunk.data);
-        });
+        if (this.outputData?.length > 0) {
+          this.outputData.forEach((chunk) => {
+            this.res.write(chunk.data);
+          });
+        }
 
         this.res.end(body);
       });
@@ -80,12 +83,6 @@ export class ServerResponse extends OutgoingMessage {
 
     // @ts-ignore
     this.writeHead = (code: number, headers: { [name: string]: string | string[] } = this[kOutHeaders]) => {
-      // try {
-      //   throw new Error("writeHead!!");
-      // } catch (error) {
-      //   console.log(error.stack);
-      // }
-
       if (this._headerSent) {
         console.warn("writeHead: headers were already sent.")
         return;

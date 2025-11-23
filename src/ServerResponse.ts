@@ -1,18 +1,14 @@
-import EventEmitter from "events";
-import http, { OutgoingMessage } from "http";
-import uWS, { RecognizedString } from "uWebSockets.js";
+import { OutgoingMessage } from "http";
+import uWS from "uWebSockets.js";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { response } from "express";
-import { mixin } from "./utils";
 
 const res = {};
-
 const kOutHeaders = Symbol.for('kOutHeaders')
 
 for (const key of Object.getOwnPropertyNames(response)) {
   if (typeof response[key] === 'function') {
     res[key] = response[key];
-
   } else {
     res[key] = response[key];
   }

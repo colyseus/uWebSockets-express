@@ -1,7 +1,7 @@
 {
     "extends": "./tsconfig/tsconfig.all.json",
     "compilerOptions": {
-        "target": "es6",
+        "target": "ESNext",
         "outDir": "lib",
         "declaration": true,
         "downlevelIteration": true, /*only for tests*/

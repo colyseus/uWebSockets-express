@@ -13,19 +13,20 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   public method: string;
 
   // public query: querystring.ParsedUrlQuery;
+  public headers: http.IncomingHttpHeaders = {};
+  public body: any;
+  public finished: boolean = false;
 
   // private _url: string;
   // private _path: string;
   private _baseUrl: string = "";
   private _rawquery: string;
   private _query: querystring.ParsedUrlQuery;
-  private _headers: http.IncomingHttpHeaders = {};
   private _params: {[name: string]: string};
-  private _bodydata: any;
-  private _rawbody: any;
   private _remoteAddress: ArrayBuffer;
   private _readableState = { pipes: [] };
   private _readBodyMaxTime = 500;
+  private _rawbody?: Buffer;
 
   public aborted: boolean;
 
@@ -42,14 +43,11 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   ) {
     super();
 
-    this._headers = {};
     this.req.forEach((key, value) => {
-      this._headers[key] = value;
+      this.headers[key] = value;
 
       // workaround: also consider 'referrer'
-      if (key === "referer") {
-        this._headers['referrer'] = value;
-      }
+      if (key === "referer") { this.headers['referrer'] = value; }
     });
 
     this.url = this.req.getUrl();
@@ -67,58 +65,66 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     if (this.app.opts?.readBodyMaxTime) {
       this._readBodyMaxTime = this.app.opts.readBodyMaxTime;
     }
-  }
 
-  get ip () {
-    return Buffer.from(this._remoteAddress).toString();
-  }
+    // Define getters as own properties to prevent Express from shadowing them
+    // This ensures the getters are called even if Express tries to set them as properties
 
-  set body (_body: any) {
-    this._bodydata = _body;
-  }
+    Object.defineProperty(this, 'ip', {
+      get: () => {
+        return Buffer.from(this._remoteAddress).toString();
+      },
+      enumerable: true,
+      configurable: true
+    });
 
-  get body () {
-    return this._bodydata || this._rawbody?.toString();
-  }
+    Object.defineProperty(this, 'params', {
+      get: (): { [name: string]: string } => {
+        if (!this._params) {
+          this._params = {};
+          for (let i = 0; i < this.parameterNames.length; i++) {
+            const paramName = this.parameterNames[i];
+            this._params[paramName] = this.req.getParameter(i);
+          }
+        }
+        return this._params;
+      },
+      set: (value) => {
+        this._params = value;
+      },
+      enumerable: true,
+      configurable: true
+    });
 
-  get headers (): http.IncomingHttpHeaders {
-    return this._headers;
-  }
+    Object.defineProperty(this, 'query', {
+      get: (): querystring.ParsedUrlQuery => {
+        if(!this._query) this._query = querystring.parse(this._rawquery);
+        return this._query;
+      },
+      enumerable: true,
+      configurable: true
+    });
 
-  set params (value) {
-    this._params = value;
-  }
+    Object.defineProperty(this, 'baseUrl', {
+      get: () => {
+        return this._baseUrl;
+      },
+      set: (baseUrl) => {
+        this._baseUrl = baseUrl;
+      },
+      enumerable: true,
+      configurable: true
+    });
 
-  get params(): { [name: string]: string } {
-    if (!this._params) {
-      this._params = {};
-      for (let i = 0; i < this.parameterNames.length; i++) {
-        const paramName = this.parameterNames[i];
-        this._params[paramName] = this.req.getParameter(i);
-      }
-    }
-
-    return this._params;
-  }
-
-  get query (): querystring.ParsedUrlQuery {
-    if(!this._query) this._query = querystring.parse(this._rawquery);
-    return this._query;
-  }
-
-  get baseUrl() {
-    return this._baseUrl;
-  }
-
-  set baseUrl(baseUrl) {
-    this._baseUrl = baseUrl;
-  }
-
-  get path(): string {
-    const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
-    return (!path.startsWith("/"))
-      ? `/${path}`
-      : path;
+    Object.defineProperty(this, 'path', {
+      get: (): string => {
+        const path = this.#_originalUrlParsed.pathname.replace(this._baseUrl, "");
+        return (!path.startsWith("/"))
+          ? `/${path}`
+          : path;
+      },
+      enumerable: true,
+      configurable: true
+    });
   }
 
   get(name: string) {
@@ -127,7 +133,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
 
   header(name: string) {
     name = name.toLowerCase();
-    return this._headers[name] || undefined;
+    return this.headers[name] || undefined;
   }
 
   accepts(...args: any[]): string | false {
@@ -153,7 +159,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     return this;
   }
 
-  protected readBody () {
+  public _readBody () {
     return new Promise<boolean>((resolve, reject) => {
       let body: Buffer;
 
@@ -162,23 +168,25 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
       // https://github.com/endel/uWebSockets-express/issues/9
       //
       const rejectionTimeout = setTimeout(() => {
-        if (body) {
-          this._rawbody = body;
-          this.headers['content-length'] = String(body.length);
-        }
+        this.emit('error');
         reject();
       }, this._readBodyMaxTime);
 
       this.res.onData((arrayBuffer, isLast) => {
+        this.emit('data', new Uint8Array(arrayBuffer));
+
         const chunk = Buffer.from(arrayBuffer);
         body = (body && body.length !== 0) ? Buffer.concat([body, chunk]) : Buffer.concat([chunk]);
 
         if (isLast) {
           clearTimeout(rejectionTimeout);
           this._rawbody = body;
+          this.body = body.toString('utf8');
+          this.emit('end');
           resolve(body.length > 0);
         }
       });
+
     })
   }
 

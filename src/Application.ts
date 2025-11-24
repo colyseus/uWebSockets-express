@@ -41,102 +41,18 @@ export class Application extends EventEmitter implements express.Application {
 
   protected init() {
     this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
-      const url = uwsRequest.getUrl();
-
       const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
       const res = new ServerResponse(uwsResponse, req, this);
 
       uwsResponse.onAborted(onAbort.bind(undefined, req, res));
 
-      // read body data!
-      if (req.headers['content-length']) {
-        try {
-          await req['readBody']();
-        } catch (e) {
-          console.warn("uWebSockets-express: failed reading request body at", url);
-        }
-      }
+      // read body data first!
+      await req._readBody();
 
+      // @ts-ignore
       this.handle(req, res);
     });
   }
-
-  // public engine(ext: string, fn: EngineCallback) {
-  //   application.engine.apply(this, arguments);
-  // }
-
-  // public set(setting, val) {
-  //   return application.set.apply(this, arguments);
-  // }
-
-  // public enable(setting: string) {
-  //   return application.enable.call(this, setting);
-  // }
-
-  // public enabled(setting: string) {
-  //   return application.enabled.call(this, setting);
-  // }
-
-  // public render(name: string, options: any, callback: RenderCallback) {
-  //   return application.render.apply(this, arguments);
-  // }
-
-  // public use(handler: RequestHandler)
-  // public use(path: string, handler: RequestHandler)
-  // public use(path: string, router: express.Router)
-  // public use(path: string, ...handlers: Array<express.Router | RequestHandler>)
-  // public use(path: string, any: any)
-  // public use(any: any)
-  // public use(pathOrHandler: string | RequestHandler, ...handlersOrRouters: Array<RequestHandler | express.Router>) {
-  //   express.application.use.apply(this, arguments);
-  //   return this;
-  // }
-
-  // public get(path: string, ...handlers: RequestHandler[]) {
-  //   return express.application.get.apply(this, arguments);
-  // }
-
-  // public post(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.post.apply(this, arguments);
-  //   return this;
-  // }
-
-  // public patch(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.patch.apply(this, arguments);
-  //   return this;
-  // }
-
-  // public options(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.options.apply(this, arguments);
-  //   return this;
-  // }
-
-  // public put(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.put.apply(this, arguments);
-  //   return this;
-  // }
-
-  // /**
-  //  * @deprecated
-  //  */
-  // public del(path: string, ...handlers: RequestHandler[]) {
-  //   return this.delete.apply(this, arguments);
-  // }
-
-  // public delete(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.delete.apply(this, arguments);
-  //   return this;
-  // }
-
-  // public head(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.head.apply(this, arguments);
-  //   return this;
-  // }
-
-  // public all(path: string, ...handlers: RequestHandler[]) {
-  //   express.application.all.apply(this, arguments);
-  //   return this;
-  // }
 
   // @ts-ignore
   public listen(port?: number, cb?: () => void) {

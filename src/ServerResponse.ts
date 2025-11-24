@@ -71,7 +71,7 @@ export class ServerResponse extends OutgoingMessage {
       return this;
     }
 
-    this.setHeader = (name: string, value: string) => {
+    this.setHeader = (name: string, value: string | string[]) => {
       let headers = this[kOutHeaders];
 
       if (!headers) {
@@ -88,6 +88,27 @@ export class ServerResponse extends OutgoingMessage {
       return this;
     }
 
+    // Override hasHeader to work with our lowercase header storage
+    this.hasHeader = (name: string) => {
+      const headers = this[kOutHeaders];
+      if (!headers) return false;
+      return name.toLowerCase() in headers;
+    }
+
+    // Override getHeader to work with our lowercase header storage
+    this.getHeader = (name: string) => {
+      const headers = this[kOutHeaders];
+      if (!headers) return undefined;
+      return headers[name.toLowerCase()];
+    }
+
+    // Override removeHeader to work with our lowercase header storage
+    this.removeHeader = (name: string) => {
+      const headers = this[kOutHeaders];
+      if (!headers) return;
+      delete headers[name.toLowerCase()];
+    }
+
     // @ts-ignore
     this.writeHead = (code: number, headers: { [name: string]: string | string[] } = this[kOutHeaders]) => {
       if (this._headerSent) {
@@ -102,9 +123,8 @@ export class ServerResponse extends OutgoingMessage {
         // write headers
         for (const name in headers) {
           if (Array.isArray(headers[name])) {
-            for (const headerValue of headers[name]) {
-              this.res.writeHeader(name, headerValue?.toString());
-            }
+            // Join array values with comma and space (RFC 7230)
+            this.res.writeHeader(name, headers[name].map(v => v?.toString()).join(', '));
           } else {
             this.res.writeHeader(name, headers[name]?.toString());
           }

@@ -1,5 +1,5 @@
 import uWS from "uWebSockets.js";
-import express from "express";
+// import express from "express";
 import expressify from "../src";
 
 // import promisified timers

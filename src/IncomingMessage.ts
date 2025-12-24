@@ -15,7 +15,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   // public query: querystring.ParsedUrlQuery;
   public headers: http.IncomingHttpHeaders = {};
   public body: any;
-  public finished: boolean = false;
+  public complete: boolean = false;
 
   // private _url: string;
   // private _path: string;
@@ -24,14 +24,15 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   private _query: querystring.ParsedUrlQuery;
   private _params: {[name: string]: string};
   private _remoteAddress: ArrayBuffer;
-  private _readableState = { pipes: [] };
+  private _readableState: any = { pipes: [], endEmitted: false, readable: true };
   private _readBodyMaxTime = 500;
   private _rawbody?: Buffer;
+  private _dataEventRegistered = false;
 
   public aborted: boolean;
 
   // @ts-ignore
-  public socket = new Socket(false, true);
+  public socket = new Socket(true, true);
 
   #_originalUrlParsed: URL;
 
@@ -125,6 +126,59 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
       enumerable: true,
       configurable: true
     });
+
+    // Define 'on' as an own property to prevent Express from shadowing it.
+    // Express's app.handle() calls Object.setPrototypeOf(req, this.request),
+    // which would otherwise bypass our custom 'on' method defined on the prototype.
+    Object.defineProperty(this, 'on', {
+      value: (event: string | symbol, listener: (...args: any[]) => void) => {
+        if (this._rawbody !== undefined) {
+          /**
+           * req.body is read synchronously before any middleware runs.
+           * Here we mimic triggering 'data' + 'end' + 'close' right when the event is registered.
+           *
+           * Note: When body-parser rejects due to content-length exceeding limit,
+           * it may only register 'end' listener (without 'data'), so we need to handle both cases.
+           */
+          if (event === 'data') {
+            // Mark that 'data' was registered - this tells 'end' handler not to trigger separately
+            this._dataEventRegistered = true;
+            setImmediate(() => {
+              listener(this._rawbody);
+              this.emit('end');
+              this.emit('close');
+              // Mark request as finished AFTER emitting events, so body-parser can read first
+              this.complete = true;
+              this._readableState.endEmitted = true;
+            });
+          } else if (event === 'end') {
+            // Register the 'end' listener normally so it can be called by emit('end')
+            EventEmitter.prototype.on.call(this, event, listener);
+            // After a tick, check if 'data' was registered
+            // If not (e.g., body-parser rejecting due to size limit), we need to trigger 'end' manually
+            // Only do this if there's actual body content - if body is empty (Content-Length: 0),
+            // raw-body returns early without registering listeners, so we shouldn't emit either
+            setImmediate(() => {
+              if (!this._dataEventRegistered && this._rawbody && this._rawbody.length > 0) {
+                this.emit('end');
+                this.emit('close');
+                // Mark request as finished AFTER emitting events
+                this.complete = true;
+                this._readableState.endEmitted = true;
+              }
+            });
+          } else {
+            EventEmitter.prototype.on.call(this, event, listener);
+          }
+        } else {
+          EventEmitter.prototype.on.call(this, event, listener);
+        }
+        return this;
+      },
+      writable: true,
+      enumerable: false,
+      configurable: true
+    });
   }
 
   get(name: string) {
@@ -143,16 +197,44 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   resume() { return this; }
 
   on(event: string | symbol, listener: (...args: any[]) => void) {
-    if (event === 'data' && this._rawbody !== undefined) {
+    if (this._rawbody !== undefined) {
       /**
-       * req.body is synchronously before any middleware runs.
-       * here we're mimicking to trigger 'data' + 'end' + 'close' right at the moment the event is registered.
+       * req.body is read synchronously before any middleware runs.
+       * Here we mimic triggering 'data' + 'end' + 'close' right when the event is registered.
+       *
+       * Note: When body-parser rejects due to content-length exceeding limit,
+       * it may only register 'end' listener (without 'data'), so we need to handle both cases.
        */
-      setImmediate(() => {
-        listener(this._rawbody);
-        this.emit('end');
-        this.emit('close');
-      });
+      if (event === 'data') {
+        // Mark that 'data' was registered - this tells 'end' handler not to trigger separately
+        this._dataEventRegistered = true;
+        setImmediate(() => {
+          listener(this._rawbody);
+          this.emit('end');
+          this.emit('close');
+          // Mark request as finished AFTER emitting events, so body-parser can read first
+          this.complete = true;
+          this._readableState.endEmitted = true;
+        });
+      } else if (event === 'end') {
+        // Register the 'end' listener normally so it can be called by emit('end')
+        super.on(event, listener);
+        // After a tick, check if 'data' was registered
+        // If not (e.g., body-parser rejecting due to size limit), we need to trigger 'end' manually
+        // Only do this if there's actual body content - if body is empty (Content-Length: 0),
+        // raw-body returns early without registering listeners, so we shouldn't emit either
+        setImmediate(() => {
+          if (!this._dataEventRegistered && this._rawbody && this._rawbody.length > 0) {
+            this.emit('end');
+            this.emit('close');
+            // Mark request as finished AFTER emitting events
+            this.complete = true;
+            this._readableState.endEmitted = true;
+          }
+        });
+      } else {
+        super.on(event, listener);
+      }
     } else {
       super.on(event, listener);
     }
@@ -183,6 +265,14 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
           this._rawbody = body;
           this.body = body.toString('utf8');
           this.emit('end');
+
+          // For empty bodies (GET, HEAD, etc.), mark as finished immediately
+          // since no middleware will try to read them
+          if (body.length === 0) {
+            this.complete = true;
+            this._readableState.endEmitted = true;
+          }
+
           resolve(body.length > 0);
         }
       });

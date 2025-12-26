@@ -1,6 +1,6 @@
 # uWebSockets.js + Express
 
-Express API compatibility layer for uWebSockets.js.
+Express API compatibility layer for [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js).
 
 ## Usage
 

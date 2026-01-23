@@ -2,6 +2,8 @@
 
 Express API compatibility layer for [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js).
 
+Supports both Express v5 and Express v4 ([`express-v4` branch](https://github.com/colyseus/uWebSockets-express/tree/express-v4))
+
 ## Usage
 
 ```typescript

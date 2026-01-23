@@ -41,7 +41,7 @@ export class Application extends EventEmitter implements express.Application {
 
   protected init() {
     this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
-      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
+      const req = new IncomingMessage(uwsRequest, uwsResponse, this);
       const res = new ServerResponse(uwsResponse, req, this);
 
       uwsResponse.onAborted(onAbort.bind(undefined, req, res));

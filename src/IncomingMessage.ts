@@ -33,30 +33,38 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   public socket = new Socket(false, true);
 
   #_originalUrlParsed: URL;
+  private parameterNames: string[] = [];
 
   constructor(
     private req: uWS.HttpRequest,
     private res: uWS.HttpResponse,
-    private parameterNames: string[],
-    private app: Application
+    private app: Application,
+    initialData?: {
+      headers?: http.IncomingHttpHeaders;
+      url?: string;
+      method?: string;
+      body?: any;
+      query?: string;
+      remoteAddress?: ArrayBuffer;
+    }
   ) {
     super();
 
-    this._headers = {};
-    this.req.forEach((key, value) => {
-      this._headers[key] = value;
+    this._headers = initialData?.headers || {};
 
-      // workaround: also consider 'referrer'
-      if (key === "referer") {
-        this._headers['referrer'] = value;
-      }
-    });
+    if (!initialData?.headers) {
+      this.req.forEach((key, value) => this._headers[key] = value);
+    }
 
-    this.url = this.req.getUrl();
-    this.method = this.req.getMethod().toUpperCase();
+    this.url = initialData?.url || this.req.getUrl();
+    this.method = (initialData?.method || this.req.getMethod()).toUpperCase();
 
-    this._rawquery = this.req.getQuery();
-    this._remoteAddress = this.res.getRemoteAddressAsText();
+    this._rawquery = initialData?.query || this.req.getQuery();
+    this._remoteAddress = initialData?.remoteAddress || this.res.getRemoteAddressAsText();
+
+    if (this._headers['referer']) {
+      this._headers['referrer'] = this._headers['referer'];
+    }
 
     if (this._rawquery) {
       this.url += `?${this._rawquery}`;

@@ -7,6 +7,7 @@ const PORT = 8080;
 // external express router
 const users = express.Router();
 users.get("/", (req, res) => res.json({ username: "Jake Badlands" }));
+users.get("/param/:id", (req, res) => res.json({ id: req.params.id }));
 
 const app = expressify(uWS.App());
 app.use("/users", users);

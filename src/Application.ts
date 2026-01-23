@@ -50,7 +50,7 @@ export class Application extends EventEmitter {
     this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
       const url = uwsRequest.getUrl();
 
-      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
+      const req = new IncomingMessage(uwsRequest, uwsResponse, this);
       const res = new ServerResponse(uwsResponse, req, this);
 
       uwsResponse.onAborted(onAbort.bind(undefined, req, res));

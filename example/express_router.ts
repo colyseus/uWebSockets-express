@@ -36,4 +36,4 @@ monitor.get("/api", (req, res) => res.json({ data: [1, 2, 3, 4, 5] }));
 app.use("/monitor", monitor);
 
 
-app.listen(PORT);
+app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));

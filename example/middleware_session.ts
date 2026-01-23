@@ -1,14 +1,9 @@
-import express from "express";
-import expressify from "../src";
 import uWS from "uWebSockets.js";
-
 import session from "express-session";
+import expressify from "../src";
 
 const PORT = 8080;
-
 const app = expressify(uWS.App());
-
-// app.use(cookieParser());
 
 // Use the session middleware
 app.use(session({

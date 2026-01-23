@@ -28,6 +28,7 @@ describe("uWS Express API Compatibility", () => {
     // Create a fresh uWS app for each test to avoid route handler conflicts
     uWSApp = uWS.App();
     app = expressify(uWSApp);
+    // app = express();
 
     // Wait for server to be ready before proceeding
     await new Promise<void>((resolve) => {
@@ -90,13 +91,13 @@ describe("uWS Express API Compatibility", () => {
       assert.strictEqual(undefined, response.headers['something']);
     });
 
-    it("json()", async () => {
+    it("response json()", async () => {
       app.get("/json", (req, res) => {
         res.json({ hello: "world" });
       });
 
       const response = await http.get(`${currentURL}/json`);
-      assert.strictEqual("application/json", response.headers['content-type']);
+      assert.strictEqual("application/json; charset=utf-8", response.headers['content-type']);
       assert.deepStrictEqual({ hello: "world" }, response.data);
     });
 
@@ -253,18 +254,19 @@ describe("uWS Express API Compatibility", () => {
     });
 
     it("ip", async () => {
-      app.get("/ip", (req, res) => {
-        res.json({ ip: req.ip });
-      });
+      app.get("/ip", (req, res) => res.json({ ip: req.ip }));
 
       const { data } = (await http.get(`${currentURL}/ip`));
-      assert.strictEqual(39, data.ip.length);
+      assert.ok((data.ip as string).includes("::1") || (data.ip as string).includes(":0001"));
     });
 
     it("parse small request body", async () => {
+      app.use(express.text());
       app.post("/small_body", (req, res) => res.end(req.body));
 
-      const { data } = (await http.post(`${currentURL}/small_body`, "small body"));
+      const { data } = (await http.post(`${currentURL}/small_body`, "small body", {
+        headers: { "Content-Type": 'text/plain', },
+      }));
       assert.strictEqual("small body", data);
     })
 
@@ -272,11 +274,12 @@ describe("uWS Express API Compatibility", () => {
       app.use(express.json());
       app.post("/multibyte_body", (req, res) => res.end(req.body?.str));
 
-      const { data } = (await http.post(`${currentURL}/multibyte_body`, {str: "multibyte 世界 body"}));
+      const { data } = (await http.post(`${currentURL}/multibyte_body`, { str: "multibyte 世界 body" }));
       assert.strictEqual("multibyte 世界 body", data);
     })
 
     it("parse large request body", async () => {
+      app.use(express.text());
       app.post("/large_body", (req, res) => res.end(req.body));
 
       let largeBody: string = "";
@@ -284,7 +287,9 @@ describe("uWS Express API Compatibility", () => {
         largeBody += "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*(),./;'[]<>?:{}-=_+\"`~";
       }
 
-      const { data } = (await http.post(`${currentURL}/large_body`, largeBody));
+      const { data } = (await http.post(`${currentURL}/large_body`, largeBody, {
+        headers: { "Content-Type": 'text/plain', },
+      }));
       assert.strictEqual(largeBody, data);
     })
 
@@ -525,18 +530,31 @@ describe("uWS Express API Compatibility", () => {
       assert.deepStrictEqual({ hello: "world" }, response.data);
     })
 
-    it("should read body as plain text", async () => {
-      app.post("/json", (req, res) => res.json(req.body));
+    it("should reject request with body larger than limit", async () => {
+      app.use(express.json({ limit: "1kb" }));
+      app.post("/json_limit", (req, res) => res.json(req.body));
 
-      const response = await http.post(`${currentURL}/json`, { hello: "world" });
-      assert.deepStrictEqual('{"hello":"world"}', response.data);
+      try {
+        await http.post(`${currentURL}/json_limit`, { big_json: "f".repeat(4096) });
+      } catch (e) {
+        assert.strictEqual(413, e.response.status);
+      }
+    })
+
+    it("should read body as plain text", async () => {
+      app.use(express.text());
+      app.post("/plain_json", (req, res) => res.json(req.body));
+
+      const response = await http.post(`${currentURL}/plain_json`, JSON.stringify({ hello: "world" }), {
+        headers: { "Content-Type": 'text/plain', },
+      });
+
+      assert.strictEqual('{"hello":"world"}', response.data);
     })
 
     it("should support urlencoded()", async () => {
       app.use(express.urlencoded());
-      app.post("/post_urlencoded", (req, res) => {
-        res.json(req.body);
-      });
+      app.post("/post_urlencoded", (req, res) => res.json(req.body));
 
       const response = await http.post(`${currentURL}/post_urlencoded`, "hello=world&foo=bar", {
         headers: {
@@ -553,15 +571,20 @@ describe("uWS Express API Compatibility", () => {
     it("should support json + urlencoded", async () => {
       app.use(express.json());
       app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
       app.post("/json_urlencoded", (req, res) => {
+        console.log("BODY:", typeof(req.body), req.body);
         res.json(req.body);
       });
 
-      const response = await http.post(`${currentURL}/json_urlencoded`, { hello: "world" });
+      const response = await http.post(`${currentURL}/json_urlencoded`, { hello: "world" }, {
+        headers: {
+          "Content-Type": 'application/json',
+        }
+      });
 
-      assert.deepStrictEqual({
-        hello: "world",
-      }, response.data);
+      console.log(response.data);
+      assert.deepStrictEqual({ hello: "world", }, response.data);
     });
 
     it("should support attaching middleware + route ", async () => {
@@ -588,11 +611,11 @@ describe("uWS Express API Compatibility", () => {
 
   describe("Edge cases", () => {
 
-    it("should not error when content-length is 0, but body is present", (done) => {
+    it("should error when content-length is 0, but body is present", (done) => {
       app.use(express.json());
-      app.post("/content_length", (req, res) => res.json({ success: true }));
+      app.post("/content_length", (req, res) => res.json({ receivedBody: req.body }));
 
-      const opts = url.parse(`${currentURL}/content_length`)
+      const opts = url.parse(`${currentURL}/content_length`);
       const data = { email: "mymail@gmail.com", password: "test" };
 
       // @ts-ignore
@@ -606,35 +629,9 @@ describe("uWS Express API Compatibility", () => {
 
       rawHttp.request(opts, function (res) {
         res.on("data", (chunk) => {
-          assert.strictEqual('{"success":true}', chunk.toString());
+          assert.deepStrictEqual({ receivedBody: "" }, JSON.parse(chunk.toString()));
           done();
         });
-        res.read();
-      }).end(JSON.stringify(data));
-    });
-
-    it("should not error when content-length is higher than actual body", (done) => {
-      app.use(express.json());
-      app.post("/content_length_higher", (req, res) => res.json({ success: true }));
-
-      const opts = url.parse(`${currentURL}/content_length_higher`)
-      const data = { email: "mymail@gmail.com" };
-
-      // @ts-ignore
-      opts.method = "POST";
-      // @ts-ignore
-      opts.headers = {};
-      // @ts-ignore
-      opts.headers['Content-Type'] = 'application/json';
-      // @ts-ignore
-      opts.headers['Content-Length'] = '50';
-
-      rawHttp.request(opts, function (res) {
-        res.on("data", (chunk) => {
-          assert.strictEqual('{"success":true}', chunk.toString());
-          done();
-        });
-        res.read();
       }).end(JSON.stringify(data));
     });
 

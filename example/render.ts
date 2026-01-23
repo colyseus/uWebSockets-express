@@ -29,7 +29,7 @@ app.get("/render", (req, res) => {
 
 app.get("/redirect", (req, res) => {
   console.log("Let's redirect back!");
-  res.redirect('back');
+  res.redirect(req.get('Referrer') || '/')
 });
 
-app.listen(PORT, () => console.log(`Listening at ${PORT}`));
+app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));

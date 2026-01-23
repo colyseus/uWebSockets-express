@@ -32,6 +32,26 @@ export class Application extends EventEmitter {
   protected request = express.request;
   protected response = express.response;
 
+  protected handler = async (uwsResponse: uWS.HttpResponse, uwsRequest: uWS.HttpRequest) => {
+    const url = uwsRequest.getUrl();
+
+    const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
+    const res = new ServerResponse(uwsResponse, req, this);
+
+    uwsResponse.onAborted(onAbort.bind(undefined, req, res));
+
+    // read body data!
+    if (req.headers['content-length']) {
+      try {
+        await req['readBody']();
+      } catch (e) {
+        console.warn("uWebSockets-express: failed reading request body at", url);
+      }
+    }
+
+    this.handle(req, res);
+  }
+
   private _router: any;
 
   constructor(protected uWSApp: uWS.TemplatedApp, public opts?: ApplicationOptions) {
@@ -47,25 +67,7 @@ export class Application extends EventEmitter {
     // perform original express initialization
     application.init.apply(this, arguments);
 
-    this.uWSApp.any("/*", async (uwsResponse, uwsRequest) => {
-      const url = uwsRequest.getUrl();
-
-      const req = new IncomingMessage(uwsRequest, uwsResponse, [], this);
-      const res = new ServerResponse(uwsResponse, req, this);
-
-      uwsResponse.onAborted(onAbort.bind(undefined, req, res));
-
-      // read body data!
-      if (req.headers['content-length']) {
-        try {
-          await req['readBody']();
-        } catch (e) {
-          console.warn("uWebSockets-express: failed reading request body at", url);
-        }
-      }
-
-      this.handle(req, res);
-    });
+    this.uWSApp.any("/*", this.handler);
   }
 
   protected handle(req, res, callback?) {

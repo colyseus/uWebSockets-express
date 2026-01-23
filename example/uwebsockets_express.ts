@@ -14,3 +14,4 @@ app.use("/users", users);
 app.get('/', (req, res) => res.send("Hello world!"));
 
 app.listen(PORT);
+console.log("Server is running on port http://localhost:" + PORT);

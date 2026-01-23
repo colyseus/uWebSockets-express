@@ -22,6 +22,8 @@ app.use(session({
 app.get('/', (req, res) => {
   const session = (req as any).session;
 
+  console.log("SESSION:", session);
+
   if (session.views) {
     session.views++
     res.set('Content-Type', 'text/html')

@@ -58,7 +58,7 @@ export class Application extends EventEmitter {
       // read body data!
       if (req.headers['content-length']) {
         try {
-          await req['readBody']();
+          await req['_readBody']();
         } catch (e) {
           console.warn("uWebSockets-express: failed reading request body at", url);
         }

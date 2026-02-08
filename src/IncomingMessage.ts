@@ -161,7 +161,7 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
     return this;
   }
 
-  protected readBody () {
+  protected _readBody () {
     return new Promise<boolean>((resolve, reject) => {
       let body: Buffer;
 

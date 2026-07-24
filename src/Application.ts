@@ -7,7 +7,6 @@ import { ServerResponse } from "./ServerResponse.js";
 import { mixin } from "./utils.js";
 
 function onAbort(req: IncomingMessage, res: ServerResponse) {
-  console.log("onAbort...");
   req.socket.readable = false;
   res.finished = true;
   res.aborted = true;
@@ -47,7 +46,15 @@ export class Application extends EventEmitter implements express.Application {
       uwsResponse.onAborted(onAbort.bind(undefined, req, res));
 
       // read body data first!
-      await req._readBody();
+      try {
+        await req._readBody();
+      } catch (e: any) {
+        // keep body-read failures request-scoped (see issue #43);
+        // res.end() is a no-op if the client already aborted
+        res.statusCode = (e?.code === "ERR_REQUEST_BODY_TIMEOUT") ? 408 : 500;
+        res.end();
+        return;
+      }
 
       // @ts-ignore
       this.handle(req, res);

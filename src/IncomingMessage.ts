@@ -256,23 +256,41 @@ export class IncomingMessage extends EventEmitter implements http.IncomingMessag
   public _readBody () {
     return new Promise<boolean>((resolve, reject) => {
       let body: Buffer;
+      let settled = false;
 
       //
       // ensure request is not halted when an invalid content-length is sent by the client
       // https://github.com/endel/uWebSockets-express/issues/9
       //
       const rejectionTimeout = setTimeout(() => {
-        this.emit('error');
-        reject();
+        settled = true;
+
+        const error = Object.assign(
+          new Error(`request body timed out after ${this._readBodyMaxTime}ms of inactivity`),
+          { code: "ERR_REQUEST_BODY_TIMEOUT" },
+        );
+
+        // bare emit('error') without a listener throws process-wide (see issue #43)
+        if (this.listenerCount('error') > 0) {
+          this.emit('error', error);
+        }
+
+        reject(error);
       }, this._readBodyMaxTime);
 
       this.res.onData((arrayBuffer, isLast) => {
+        if (settled) { return; } // late chunk after timeout
+
+        // idle timeout: slow but progressing uploads stay alive
+        rejectionTimeout.refresh();
+
         this.emit('data', new Uint8Array(arrayBuffer));
 
         const chunk = Buffer.from(arrayBuffer);
         body = (body && body.length !== 0) ? Buffer.concat([body, chunk]) : Buffer.concat([chunk]);
 
         if (isLast) {
+          settled = true;
           clearTimeout(rejectionTimeout);
           this._rawbody = body;
           this.body = body.toString('utf8');

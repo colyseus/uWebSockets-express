@@ -1,6 +1,6 @@
 {
   "name": "uwebsockets-express",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Express v5 compatibility layer for uWebSockets.js",
   "main": "./build/index.cjs",
   "module": "./build/index.mjs",

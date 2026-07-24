@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import glob from 'fast-glob';
 import { fileURLToPath } from 'url';
@@ -17,6 +18,9 @@ async function main() {
     .replace(/\\/g, '/')); // windows support
 
   const outdir = path.join(basePath, 'build');
+
+  // start from a clean slate: stale artifacts here end up in the published tarball
+  fs.rmSync(outdir, { recursive: true, force: true });
 
   // Emit only .d.ts files
   const emitTSDeclaration = () => {
@@ -50,7 +54,7 @@ async function main() {
 
   // CommonJS output
   console.log("Generating CJS build...");
-  esbuild.build({
+  await esbuild.build({
     entryPoints,
     outdir,
     target,
@@ -76,7 +80,7 @@ async function main() {
 
   // ESM output
   console.log("Generating ESM build...");
-  esbuild.build({
+  await esbuild.build({
     entryPoints,
     outdir,
     target,
